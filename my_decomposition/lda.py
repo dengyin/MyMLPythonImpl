@@ -2,11 +2,12 @@ import numpy as np
 from scipy.linalg import eigh
 
 
-class MyLDA:
+class MyLinearDiscriminantAnalysis:
     def __init__(self, n_components=None):
         self.n_components = n_components
 
     def fit(self, X, y):
+        self.n_features = X.shape[1]
         u1 = X[y == 1, :].mean(axis=0).reshape((-1, 1))
         u0 = X[y == 0, :].mean(axis=0).reshape((-1, 1))
         Sb = (u1 - u0) @ (u1 - u0).T
@@ -17,5 +18,13 @@ class MyLDA:
         self.scalings_ = e_vecs
 
     def transform(self, X):
-        self.n_components = X.shape[1]
+        if not hasattr(self, 'scalings_'):
+            raise Exception('Please run `fit` before transform')
+        assert X.shape[1] == self.n_features, 'X.shape[1] != self.n_features'
+        if self.n_components is None:
+            self.n_components = self.n_features
         return (X @ self.scalings_)[:, :self.n_components]
+
+    def fit_transform(self, X):
+        self.fit(X)
+        return self.transform(X)
