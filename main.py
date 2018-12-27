@@ -44,3 +44,5 @@ if __name__ == '__main__':
     print(log_loss(y, clf.predict_proba(X)))
     print(accuracy_score(y, clf.predict(X)))
     print('LinearDiscriminantAnalysis===============')
+
+    # from sklearn import
