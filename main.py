@@ -18,4 +18,3 @@ if __name__ == '__main__':
     pca = PCA(n_components=4)
     z4 = pca.fit_transform(X)
 
-    print('end')
