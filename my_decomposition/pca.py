@@ -56,10 +56,10 @@ class MyKernelPCA:
         K = K - one_M @ K - K @ one_M + one_M @ K @ one_M
         e_vals, e_vecs = eig(K)
         e_vals, e_vecs = np.real(e_vals), np.real(e_vecs)
-        e_vecs = e_vecs[:, np.argsort(e_vals)[::-1]]
-        # e_vecs /= np.linalg.norm(e_vecs, axis=0)
-        e_vals /= np.sqrt(np.sort(e_vals)[::-1])
+        e_vecs /= np.linalg.norm(e_vecs, axis=0)
+        e_vecs = e_vecs[:, np.argsort(e_vals)[::-1]] / np.sqrt(np.sort(e_vals)[::-1])
         self.scalings_ = e_vecs
+        self.e_vals_ = e_vals
         self.__X = X
 
     def transform(self, X):

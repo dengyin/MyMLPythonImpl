@@ -1,7 +1,7 @@
 from sklearn.datasets import make_classification
-from sklearn.decomposition import PCA, FactorAnalysis
+from sklearn.decomposition import PCA, FactorAnalysis, KernelPCA
 
-from my_decomposition import MyFactorAnalysis, MyPCA
+from my_decomposition import MyFactorAnalysis, MyPCA, MyKernelPCA
 
 if __name__ == '__main__':
     X, y = make_classification(n_samples=1000, n_features=10, n_redundant=2)
@@ -18,3 +18,10 @@ if __name__ == '__main__':
     pca = PCA(n_components=4)
     z4 = pca.fit_transform(X)
 
+    my_kpca = MyKernelPCA(n_components=4)
+    z5 = my_kpca.fit_transform(X)
+
+    kpca = KernelPCA(n_components=4)
+    z6 = kpca.fit_transform(X)
+
+    print('end')
