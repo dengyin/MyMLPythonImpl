@@ -106,3 +106,42 @@ class MyLasso(MyLinearModel):
             if l_of_w_first - l_of_w_last < self.stop_threshold:
                 return self._w
             l_of_w_first = l_of_w_last
+
+
+class MyGaussianProcessRegressor(MyLinearModel):
+    def __init__(self, sigma_w=1, sigma_e=0, kernel='linear', kernel_para=0.1):
+        self.__kernels = {'linear': self.__kernel_linear,
+                          'rbf': self.__kernel_rbf}
+        assert kernel in self.__kernels, 'arg kernel =\'' + kernel + '\' is not available'
+        self.kernel = kernel
+        self.kernel_para = kernel_para
+        self.sigma_w = sigma_w
+        self.sigma_e = sigma_e
+        super().__init__()
+
+    def __kernel_linear(self, x, y):
+        return x.T @ y
+
+    def __kernel_rbf(self, x, y):
+        result = np.zeros((x.shape[1], y.shape[1]))
+        for i in range(result.shape[0]):
+            for j in range(result.shape[1]):
+                result[i, j] = np.exp(-self.kernel_para * (x[:, i] - y[:, j]).T @ (x[:, i] - y[:, j]))
+        return result
+
+    def fit(self, X, y):
+        self._check_X_y(X, y)
+        n_samples, n_features = X.shape
+        X = self._trans_X(X)
+        self.__X_train = X
+        self.__y_train = y.reshape((-1, 1))
+        self.__C_train = self.sigma_e * np.eye(n_samples) + \
+                         self.sigma_w * self.__kernels[self.kernel](X.T, X.T)
+        self.a_ = np.linalg.inv(self.__C_train) @ self.__y_train
+
+    def predict(self, X):
+        if not hasattr(self, 'a_'):
+            raise Exception('Please run `fit` before predict')
+        X = self._trans_X(X)
+        kT = self.__kernels[self.kernel](X.T, self.__X_train.T)
+        return (self.a_.T @ kT.T).ravel()

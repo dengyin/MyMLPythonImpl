@@ -1,4 +1,5 @@
 import numpy as np
+from sklearn.datasets import make_classification
 
 
 def sigmoid(inX):
@@ -75,9 +76,7 @@ class NeuralNetworkClassfier:
 
 
 if __name__ == '__main__':
-    import LoadData
-
-    X, y = LoadData.loadDataSet('horseColicTraining.txt')
+    X, y = make_classification(n_samples=1000, n_features=10, n_redundant=2)
     clf = NeuralNetworkClassfier(hidden_layer_sizes=(1,), learning_rate=0.01, max_iter=1000)
     clf.fit(X, y)
     from sklearn.metrics import roc_auc_score, f1_score, accuracy_score
