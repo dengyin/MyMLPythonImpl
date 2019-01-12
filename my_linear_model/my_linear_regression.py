@@ -108,7 +108,35 @@ class MyLasso(MyLinearModel):
             l_of_w_first = l_of_w_last
 
 
-class MyGaussianProcessRegressor(MyLinearModel):
+class MyBayesianLinearRegression(MyLinearModel):
+    def __init__(self, alpha=0, beta=1):
+        self.alpha = alpha
+        self.beta = beta
+        super().__init__()
+
+    def fit(self, X, y):
+        self._check_X_y(X, y)
+        X = self._trans_X(X)
+        n_samples, n_features = X.shape
+        self._sigma_w = np.linalg.inv(self.alpha * np.eye(n_features) + self.beta * X.T @ X)
+        self._nue_w = self.beta * self._sigma_w @ X.T @ y.reshape((-1, 1))
+
+    def predict(self, X):
+        # before predict, you must run fit func.
+        if not hasattr(self, '_nue_w'):
+            raise Exception('Please run `fit` before predict')
+
+        X = np.column_stack((X, np.ones((X.shape[0], 1))))
+
+        if X.shape[1] != self._nue_w.shape[0]:
+            shape_err = 'X.shape[1]:' + str(X.shape[1] - 1) + " neq n_feature:" + str(self._nue_w.shape[0] - 1)
+            raise AssertionError(shape_err)
+            del shape_err
+
+        return np.column_stack((X @ self._nue_w, np.diag(1 / self.beta + X @ self._sigma_w @ X.T).reshape(-1, 1)))
+
+
+class MyGaussianProcessRegression(MyLinearModel):
     def __init__(self, sigma_w=1, sigma_e=0, kernel='linear', kernel_para=0.1):
         self.__kernels = {'linear': self.__kernel_linear,
                           'rbf': self.__kernel_rbf}

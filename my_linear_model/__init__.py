@@ -1,12 +1,15 @@
 from .my_gaussian_discriminat_analysis import MyGaussianDiscriminatAnalysis
-from .my_linear_regression import MyLinearRegression, MyRidge, MyLasso, MyGaussianProcessRegressor
-from .my_logistic_regression import MyLogisticRegression
+from .my_linear_regression import MyLinearRegression, MyRidge, MyLasso, MyGaussianProcessRegression, \
+    MyBayesianLinearRegression
+from .my_logistic_regression import MyLogisticRegression, MyBayesianLogisticRegression
 
 __all__ = [
     'MyLinearRegression',
     'MyRidge',
     'MyLasso',
-    'MyGaussianProcessRegressor',
+    'MyGaussianProcessRegression',
     'MyLogisticRegression',
-    'MyGaussianDiscriminatAnalysis'
+    'MyGaussianDiscriminatAnalysis',
+    'MyBayesianLinearRegression',
+    'MyBayesianLogisticRegression'
 ]
