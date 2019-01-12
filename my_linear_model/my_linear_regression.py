@@ -147,15 +147,15 @@ class MyGaussianProcessRegression(MyLinearModel):
         self.sigma_e = sigma_e
         super().__init__()
 
-    def __kernel_linear(self, x, y):
-        return x.T @ y
-
     def __kernel_rbf(self, x, y):
         result = np.zeros((x.shape[1], y.shape[1]))
         for i in range(result.shape[0]):
             for j in range(result.shape[1]):
                 result[i, j] = np.exp(-self.kernel_para * (x[:, i] - y[:, j]).T @ (x[:, i] - y[:, j]))
         return result
+
+    def __kernel_linear(self, x, y):
+        return x.T @ y
 
     def fit(self, X, y):
         self._check_X_y(X, y)

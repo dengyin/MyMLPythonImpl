@@ -117,7 +117,7 @@ class MyBayesianLogisticRegression(MyLinearModel):
         if not hasattr(self, '_nue_w'):
             raise Exception('Please run `fit` before predict')
 
-        X = np.column_stack((X, np.ones((X.shape[0], 1))))
+        X = self._trans_X(X)
 
         if X.shape[1] != self._nue_w.shape[0]:
             shape_err = 'X.shape[1]:' + str(X.shape[1] - 1) + " neq n_feature:" + str(self._nue_w.shape[0] - 1)
@@ -125,6 +125,57 @@ class MyBayesianLogisticRegression(MyLinearModel):
             del shape_err
 
         return self.__predict_ways[self.predict_way](X)
+
+    def predict(self, X):
+        return np.where(self.predict_proba(X) >= 0.5, 1, 0)
+
+
+class MyGaussianProcessClassifier(MyLinearModel):
+    def __init__(self, alpha=1, kernel='linear', kernel_para=0.1):
+        self.alpha = alpha
+        self.__kernels = {'linear': self.__kernel_linear,
+                          'rbf': self.__kernel_rbf}
+        assert kernel in self.__kernels, 'arg kernel =\'' + kernel + '\' is not available'
+        self.kernel = kernel
+        self.kernel_para = kernel_para
+        super().__init__()
+
+    def __kernel_rbf(self, x, y):
+        result = np.zeros((x.shape[1], y.shape[1]))
+        for i in range(result.shape[0]):
+            for j in range(result.shape[1]):
+                result[i, j] = np.exp(-self.kernel_para * (x[:, i] - y[:, j]).T @ (x[:, i] - y[:, j]))
+        return result
+
+    def __kernel_linear(self, x, y):
+        return x.T @ y
+
+    def fit(self, X, y):
+        self._check_X_y(X, y)
+        n_samples, n_features = X.shape
+        X = self._trans_X(X)
+        self.__X_train = X
+        self.__y_train = y.reshape((-1, 1))
+        self.__C_train = self.alpha * self.__kernels[self.kernel](X.T, X.T)
+        a = np.random.random((n_samples, 1))
+        for i in range(1000):
+            Wm = np.diag((sigma(a) * (1 - sigma(a))).ravel())
+            a = self.__C_train \
+                @ np.linalg.pinv(np.eye(n_samples) + Wm @ self.__C_train) \
+                @ (self.__y_train - sigma(a) + Wm @ a)
+        self._a_train = a
+        self._sigma_train = sigma(self._a_train)
+
+    def predict_proba(self, X):
+        # before predict, you must run fit func.
+        if not hasattr(self, '_sigma_train'):
+            raise Exception('Please run `fit` before predict')
+
+        X = self._trans_X(X)
+
+        kT = self.__kernels[self.kernel](X.T, self.__X_train.T)
+
+        return sigma(kT @ (self.__y_train - self._sigma_train))
 
     def predict(self, X):
         return np.where(self.predict_proba(X) >= 0.5, 1, 0)
