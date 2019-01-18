@@ -12,7 +12,7 @@ if __name__ == '__main__':
     y2 = my_clf.predict(X).ravel()
     print(accuracy_score(y, y2))
 
-    clf = LogisticRegression(multi_class='auto')
+    clf = LogisticRegression(multi_class='ovr')
     clf.fit(X, y)
     y3 = clf.predict_proba(X)
     y4 = clf.predict(X)
