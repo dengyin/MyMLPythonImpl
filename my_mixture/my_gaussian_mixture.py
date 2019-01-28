@@ -11,6 +11,8 @@ def norm_distribute(x, mean, sigma):
         * np.exp(
         -0.5 * (x - mean).T @ np.linalg.inv(sigma) @ (x - mean)
     )
+    if p.shape[0] == p.shape[1]:
+        p = np.diag(p)
     return p
 
 
@@ -25,8 +27,6 @@ class MyGaussianMixture:
         mean = []
         sigma = []
         for _ in range(self.n_componts):
-            # mean.append(X.mean(axis=0).reshape((-1, 1)))
-            # sigma.append(np.cov(X.T))
             mean.append(np.random.random((self.n_features, 1)))
             sigma.append(np.eye(self.n_features))
         fi = np.ones(self.n_componts) / self.n_componts
@@ -35,7 +35,7 @@ class MyGaussianMixture:
         for _ in range(self.max_iter):
             # E step
             for k in range(self.n_componts):
-                z[:, k] = fi[k] * np.diag(norm_distribute(X.T, mean[k], sigma[k])).reshape((1, -1))
+                z[:, k] = fi[k] * norm_distribute(X.T, mean[k], sigma[k])
             z /= z.sum(axis=1).reshape(-1, 1)
 
             # M step
@@ -63,7 +63,7 @@ class MyGaussianMixture:
         m, n = X.shape
         z = np.zeros((m, self.n_componts))
         for k in range(self.n_componts):
-            z[:, k] = self.fi[k] * np.diag(norm_distribute(X.T, self.mean[k], self.sigma[k])).reshape((1, -1))
+            z[:, k] = self.fi[k] * norm_distribute(X.T, self.mean[k], self.sigma[k])
         z /= z.sum(axis=1).reshape(-1, 1)
         return z
 
