@@ -9,8 +9,14 @@ def cross_entropy_loss(y_true, y_pred):
     return -np.sum(np.log(y_pred) * y_true)
 
 
-
-def iter_optimization(X, y, step_func, score_func, predic_func, steps, stop_threshold):
+def iter_optimization(
+        X,
+        y,
+        step_func,
+        score_func,
+        predic_func,
+        steps,
+        stop_threshold):
     w = np.random.random((X.shape[1], 1))
     l_of_w_first = score_func(y, predic_func(X, w))
     while True:
