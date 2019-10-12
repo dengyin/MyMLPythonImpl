@@ -12,12 +12,12 @@ class MyFactorAnalysis:
         self.n_features = n_features
         if self.n_components is None:
             self.n_components = n_features
-        # ³õÊ¼»¯²ÎÊı
+        # åˆå§‹åŒ–å‚æ•°
         self.mean_ = X.mean(axis=0).reshape((-1, 1))
         w = np.random.random((n_features, self.n_components))
         mat_sigma = np.eye((n_features))
         log_likelihood = None
-        # EMËã·¨
+        # EMç®—æ³•
         for _ in range(self.max_iter):
             if log_likelihood is None:
                 log_likelihood = float("-inf")
@@ -30,11 +30,11 @@ class MyFactorAnalysis:
                 if new_log_likelihood - log_likelihood < self.tol:
                     break
                 log_likelihood = new_log_likelihood
-            # E²½
+            # Eæ­¥
             M = np.eye(self.n_components) + w.T @ np.linalg.pinv(mat_sigma) @ w
             Ez = (X - self.mean_.reshape(1, -1)) @ (np.linalg.pinv(M) @ w.T @ np.linalg.pinv(mat_sigma)).T
             EzzT = n_samples * np.linalg.pinv(M) + (Ez.T @ Ez)
-            # M²½
+            # Mæ­¥
             w = (X.T - self.mean_) @ Ez @ np.linalg.pinv(EzzT)
             S = (X - self.mean_.reshape(1, -1)).T @ (X - self.mean_.reshape(1, -1)) / n_samples
             mat_sigma = S + (w @ EzzT @ w.T - (X.T - self.mean_) @ Ez @ w.T - w @ Ez.T @ (X - self.mean_.T)) / n_samples
