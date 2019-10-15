@@ -1,6 +1,6 @@
-from .cart import DecisionTreeClassifier, DecisionTreeRegressor
+from .cart import MyDecisionTreeClassifier, MyDecisionTreeRegressor
 
 __all__ = [
-    'DecisionTreeClassifier',
-    'DecisionTreeRegressor'
+    'MyDecisionTreeClassifier',
+    'MyDecisionTreeRegressor'
 ]

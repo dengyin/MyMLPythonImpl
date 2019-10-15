@@ -25,7 +25,7 @@ class BaseTree:
         return result
 
 
-class DecisionTreeClassifier(BaseTree):
+class MyDecisionTreeClassifier(BaseTree):
     def __init__(self, max_depth=5, min_samples_split=2, min_samples_leaf=1):
         self.max_depth = max_depth
         self.min_samples_split = min_samples_split
@@ -102,7 +102,7 @@ class DecisionTreeClassifier(BaseTree):
         return best_feature, best_value
 
 
-class DecisionTreeRegressor(BaseTree):
+class MyDecisionTreeRegressor(BaseTree):
     def __init__(self, max_depth=5, min_samples_split=2, min_samples_leaf=1):
         self.max_depth = max_depth
         self.min_samples_split = min_samples_split

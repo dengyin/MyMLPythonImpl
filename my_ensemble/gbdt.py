@@ -2,7 +2,7 @@ from abc import abstractmethod
 
 import numpy as np
 
-from my_tree import DecisionTreeRegressor
+from my_tree import MyDecisionTreeRegressor
 
 
 def convert_to_one_hot(y, C):
@@ -26,7 +26,7 @@ class BaseBoosting:
         return result
 
 
-class GradientBoostingClassifier(BaseBoosting):
+class MyGradientBoostingClassifier(BaseBoosting):
     def __init__(
             self,
             learning_rate=0.1,
@@ -47,14 +47,14 @@ class GradientBoostingClassifier(BaseBoosting):
         _y = convert_to_one_hot(y, self.n_class)
         self._estimators = {c: [] for c in self.classes}
         for c in self.classes:
-            base_estimator = DecisionTreeRegressor(
+            base_estimator = MyDecisionTreeRegressor(
                 self.max_depth, self.min_samples_split, self.min_samples_leaf)
             base_estimator.fit(X, np.log(np.where(
                 _y[:, c] == 1, 1 - 1e-9, 1e-9) / (1 - np.where(_y[:, c] == 1, 1 - 1e-9, 1e-9))))
             self._estimators[c].append(base_estimator)
         while len(self._estimators[0]) < self.n_estimators:
             for c in self.classes:
-                base_estimator = DecisionTreeRegressor(
+                base_estimator = MyDecisionTreeRegressor(
                     self.max_depth, self.min_samples_split, self.min_samples_leaf)
                 grad = self._calc_grad(
                     _y[:, c].ravel(), self.predict_proba(X)[:, c].ravel())
@@ -95,7 +95,7 @@ class GradientBoostingClassifier(BaseBoosting):
         return np.argmax(proba, axis=1).ravel()
 
 
-class GradientBoostingRegressor(BaseBoosting):
+class MyGradientBoostingRegressor(BaseBoosting):
     def __init__(
             self,
             learning_rate=0.1,
@@ -112,12 +112,12 @@ class GradientBoostingRegressor(BaseBoosting):
 
     def fit(self, X, y):
         self._estimators = []
-        base_estimator = DecisionTreeRegressor(
+        base_estimator = MyDecisionTreeRegressor(
             self.max_depth, self.min_samples_split, self.min_samples_leaf)
         base_estimator.fit(X, y)
         self._estimators.append(base_estimator)
         while len(self._estimators) < self.n_estimators:
-            base_estimator = DecisionTreeRegressor(
+            base_estimator = MyDecisionTreeRegressor(
                 self.max_depth, self.min_samples_split, self.min_samples_leaf)
             grad = self._calc_grad(y.ravel(), self.predict(X).ravel())
             base_estimator.fit(X, -grad)
