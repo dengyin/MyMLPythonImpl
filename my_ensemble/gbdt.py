@@ -27,7 +27,13 @@ class BaseBoosting:
 
 
 class GradientBoostingClassifier(BaseBoosting):
-    def __init__(self, learning_rate=0.1, n_estimators=100, max_depth=5, min_samples_split=2, min_samples_leaf=1):
+    def __init__(
+            self,
+            learning_rate=0.1,
+            n_estimators=100,
+            max_depth=5,
+            min_samples_split=2,
+            min_samples_leaf=1):
         self.learning_rate = learning_rate
         self.n_estimators = n_estimators
         self.max_depth = max_depth
@@ -41,18 +47,28 @@ class GradientBoostingClassifier(BaseBoosting):
         _y = convert_to_one_hot(y, self.n_class)
         self._estimators = {c: [] for c in self.classes}
         for c in self.classes:
-            base_estimator = DecisionTreeRegressor(self.max_depth, self.min_samples_split, self.min_samples_leaf)
-            base_estimator.fit(X, np.log(
-                np.where(_y[:, c] == 1, 1 - 1e-9, 1e-9) / (1 - np.where(_y[:, c] == 1, 1 - 1e-9, 1e-9))))
+            base_estimator = DecisionTreeRegressor(
+                self.max_depth, self.min_samples_split, self.min_samples_leaf)
+            base_estimator.fit(X, np.log(np.where(
+                _y[:, c] == 1, 1 - 1e-9, 1e-9) / (1 - np.where(_y[:, c] == 1, 1 - 1e-9, 1e-9))))
             self._estimators[c].append(base_estimator)
         while len(self._estimators[0]) < self.n_estimators:
             for c in self.classes:
-                base_estimator = DecisionTreeRegressor(self.max_depth, self.min_samples_split,
-                                                       self.min_samples_leaf)
-                grad = self._calc_grad(_y[:, c].ravel(), self.predict_proba(X)[:, c].ravel())
+                base_estimator = DecisionTreeRegressor(
+                    self.max_depth, self.min_samples_split, self.min_samples_leaf)
+                grad = self._calc_grad(
+                    _y[:, c].ravel(), self.predict_proba(X)[:, c].ravel())
                 base_estimator.fit(X, -grad)
                 self._estimators[c].append(base_estimator)
-            print("进度:{0}%".format(round((len(self._estimators[0]) + 1) * 100 / self.n_estimators)), end='\r')
+            print(
+                "进度:{0}%".format(
+                    round(
+                        (len(
+                            self._estimators[0]) +
+                         1) *
+                        100 /
+                        self.n_estimators)),
+                end='\r')
 
     def _sigmod(self, z):
         return 1 / (1 + np.exp(-z))
@@ -80,7 +96,13 @@ class GradientBoostingClassifier(BaseBoosting):
 
 
 class GradientBoostingRegressor(BaseBoosting):
-    def __init__(self, learning_rate=0.1, n_estimators=100, max_depth=5, min_samples_split=2, min_samples_leaf=1):
+    def __init__(
+            self,
+            learning_rate=0.1,
+            n_estimators=100,
+            max_depth=5,
+            min_samples_split=2,
+            min_samples_leaf=1):
         self.learning_rate = learning_rate
         self.n_estimators = n_estimators
         self.max_depth = max_depth
@@ -90,15 +112,25 @@ class GradientBoostingRegressor(BaseBoosting):
 
     def fit(self, X, y):
         self._estimators = []
-        base_estimator = DecisionTreeRegressor(self.max_depth, self.min_samples_split, self.min_samples_leaf)
+        base_estimator = DecisionTreeRegressor(
+            self.max_depth, self.min_samples_split, self.min_samples_leaf)
         base_estimator.fit(X, y)
         self._estimators.append(base_estimator)
         while len(self._estimators) < self.n_estimators:
-            base_estimator = DecisionTreeRegressor(self.max_depth, self.min_samples_split, self.min_samples_leaf)
+            base_estimator = DecisionTreeRegressor(
+                self.max_depth, self.min_samples_split, self.min_samples_leaf)
             grad = self._calc_grad(y.ravel(), self.predict(X).ravel())
             base_estimator.fit(X, -grad)
             self._estimators.append(base_estimator)
-            print("进度:{0}%".format(round((len(self._estimators) + 1) * 100 / self.n_estimators)), end='\r')
+            print(
+                "进度:{0}%".format(
+                    round(
+                        (len(
+                            self._estimators) +
+                         1) *
+                        100 /
+                        self.n_estimators)),
+                end='\r')
 
     def _calc_grad(self, y_true, y_pred):
         return y_pred - y_true
