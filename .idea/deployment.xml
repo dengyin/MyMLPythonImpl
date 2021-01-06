@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
-  <component name="PublishConfigData">
+  <component name="PublishConfigData" remoteFilesAllowedToDisappearOnAutoupload="false">
     <serverData>
-      <paths name="ws@10.45.2.164:22">
+      <paths name="hadoop@localhost:1010">
         <serverdata>
           <mappings>
             <mapping local="$PROJECT_DIR$" web="/" />
