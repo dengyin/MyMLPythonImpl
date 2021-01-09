@@ -5,8 +5,9 @@ from my_nn.base import BaseModel
 
 
 class Dnn(BaseModel):
-    def __init__(self, conti_features: dict, cate_features: dict, cate_list_features: dict, **kwargs):
-        super(Dnn, self).__init__(conti_features, cate_features, cate_list_features, **kwargs)
+    def __init__(self, conti_features: dict, cate_features: dict, cate_list_features: dict,
+                 cate_list_concat_way='mean', **kwargs):
+        super(Dnn, self).__init__(conti_features, cate_features, cate_list_features, cate_list_concat_way, **kwargs)
 
         self.bn1 = keras.layers.BatchNormalization()
         self.dense1 = tf.keras.layers.Dense(units=128, activation='relu')
@@ -17,7 +18,7 @@ class Dnn(BaseModel):
         self.fl = tf.keras.layers.Flatten()
 
     def call(self, inputs: dict, **kwargs):
-        x = self.fl(super(Dnn, self).call(inputs))
+        x = super(Dnn, self).call(inputs)
         if self.conti_features:
             conti_x = self.fl(
                 tf.reshape(
@@ -35,21 +36,25 @@ class Dnn(BaseModel):
 
 
 class DnnClfModel(Dnn):
-    def __init__(self, conti_features: dict, cate_features: dict, cate_list_features: dict, n_class, **kwargs):
-        super(DnnClfModel, self).__init__(conti_features, cate_features, cate_list_features, **kwargs)
+    def __init__(self, conti_features: dict, cate_features: dict, cate_list_features: dict, n_class,
+                 cate_list_concat_way='mean', **kwargs):
+        super(DnnClfModel, self).__init__(conti_features, cate_features, cate_list_features, cate_list_concat_way,
+                                          **kwargs)
 
         self.output_func = keras.layers.Dense(units=1 if n_class == 2 else n_class,
                                               activation='sigmoid' if n_class == 2 else 'softmax')
 
     def call(self, inputs: dict, **kwargs):
         return self.output_func(
-           tf.nn.relu(super(DnnClfModel, self).call(inputs))
+            tf.nn.relu(super(DnnClfModel, self).call(inputs))
         )
 
 
 class DnnRegModel(Dnn):
-    def __init__(self, conti_features: dict, cate_features: dict, cate_list_features: dict, **kwargs):
-        super(DnnRegModel, self).__init__(conti_features, cate_features, cate_list_features, **kwargs)
+    def __init__(self, conti_features: dict, cate_features: dict, cate_list_features: dict, cate_list_concat_way='mean',
+                 **kwargs):
+        super(DnnRegModel, self).__init__(conti_features, cate_features, cate_list_features, cate_list_concat_way,
+                                          **kwargs)
 
         self.output_func = keras.layers.Dense(units=1)
 

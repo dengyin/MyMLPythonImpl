@@ -9,7 +9,7 @@ from my_nn.base import BaseModel
 class FMLayer(BaseModel):
 
     def __init__(self, cate_features: dict, cate_list_features: dict, **kwargs):
-        super(FMLayer, self).__init__(None, cate_features, cate_list_features, **kwargs)
+        super(FMLayer, self).__init__(None, cate_features, cate_list_features, 'fm', **kwargs)
         self.fl = tf.keras.layers.Flatten()
 
     def call(self, inputs: dict, **kwargs):
@@ -81,7 +81,6 @@ class FMRegModel(tf.keras.Model):
         second_order = self.fm_layer(inputs)  # batch_size * 1
 
         return first_order + second_order
-
 
 
 class FMClfModel(FMRegModel):
