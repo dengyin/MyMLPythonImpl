@@ -6,16 +6,21 @@ from my_nn.base import BaseModel
 
 class Dnn(BaseModel):
     def __init__(self, conti_features: dict, cate_features: dict, cate_list_features: dict,
-                 cate_list_concat_way='mean', **kwargs):
+                 cate_list_concat_way='mean', fc_layers=(128,), activation='relu', use_bn=True, use_drop_out=True,
+                 drop_p=0.5, **kwargs):
         super(Dnn, self).__init__(conti_features, cate_features, cate_list_features, cate_list_concat_way, **kwargs)
+        self.layer_list = []
 
-        self.bn1 = keras.layers.BatchNormalization()
-        self.dense1 = tf.keras.layers.Dense(units=128, activation='relu')
+        for units in fc_layers:
+            self.layer_list.append(tf.keras.layers.Dense(units=units))
+            if use_bn:
+                self.layer_list.append(keras.layers.BatchNormalization())
+            self.layer_list.append(keras.layers.Activation(activation))
+            if use_drop_out:
+                self.layer_list.append(keras.layers.Dropout(drop_p, seed=42))
 
-        self.bn2 = keras.layers.BatchNormalization()
-        self.dense2 = tf.keras.layers.Dense(units=128)
-
-        self.fl = tf.keras.layers.Flatten()
+        if self.conti_features:
+            self.fl = tf.keras.layers.Flatten()
 
     def call(self, inputs: dict, **kwargs):
         x = super(Dnn, self).call(inputs)
@@ -30,16 +35,20 @@ class Dnn(BaseModel):
             )
             x = tf.concat([x, conti_x], axis=1)
 
-        output = self.dense1(self.bn1(x))
-        output = self.dense2(self.bn2(output))
+        for layer in self.layer_list:
+            x = layer(x)
+
+        output = x
         return output
 
 
 class DnnClfModel(Dnn):
-    def __init__(self, conti_features: dict, cate_features: dict, cate_list_features: dict, n_class,
-                 cate_list_concat_way='mean', **kwargs):
-        super(DnnClfModel, self).__init__(conti_features, cate_features, cate_list_features, cate_list_concat_way,
-                                          **kwargs)
+    def __init__(self, conti_features: dict, cate_features: dict, cate_list_features: dict,
+                 cate_list_concat_way='mean', fc_layers=(128,), activation='relu', use_bn=True, use_drop_out=True,
+                 drop_p=0.5, n_class=2, **kwargs):
+        super(DnnClfModel, self).__init__(conti_features, cate_features, cate_list_features,
+                                          cate_list_concat_way, fc_layers, activation, use_bn, use_drop_out,
+                                          drop_p, **kwargs)
 
         self.output_func = keras.layers.Dense(units=1 if n_class == 2 else n_class,
                                               activation='sigmoid' if n_class == 2 else 'softmax')
@@ -51,10 +60,12 @@ class DnnClfModel(Dnn):
 
 
 class DnnRegModel(Dnn):
-    def __init__(self, conti_features: dict, cate_features: dict, cate_list_features: dict, cate_list_concat_way='mean',
-                 **kwargs):
-        super(DnnRegModel, self).__init__(conti_features, cate_features, cate_list_features, cate_list_concat_way,
-                                          **kwargs)
+    def __init__(self, conti_features: dict, cate_features: dict, cate_list_features: dict,
+                 cate_list_concat_way='mean', fc_layers=(128,), activation='relu', use_bn=True, use_drop_out=True,
+                 drop_p=0.5, **kwargs):
+        super(DnnRegModel, self).__init__(conti_features, cate_features, cate_list_features,
+                                          cate_list_concat_way, fc_layers, activation, use_bn, use_drop_out,
+                                          drop_p, **kwargs)
 
         self.output_func = keras.layers.Dense(units=1)
 
