@@ -31,32 +31,22 @@ class BaseModel(keras.Model):
                         tf.keras.layers.Embedding(**self.cate_features[name], name=name + self.cate_embd_suf))
                 self.__dict__[name + self.cate_embd_suf].build((None, self.cate_features[name]['input_length']))
 
+        if self.cate_list_concat_way == 'fm':
+            self.cate_list_concat_func = lambda x: x
+        elif self.cate_list_concat_way == 'concate':
+            self.cate_list_concat_func = self.fl
+        elif self.cate_list_concat_way == 'mean':
+            self.cate_list_concat_func = lambda x: tf.reduce_mean(x, axis=1)
+        elif self.cate_list_concat_way == 'sum':
+            self.cate_list_concat_func = lambda x: tf.reduce_sum(x, axis=1)
+
     def call(self, inputs: dict, **kwargs):
         if self.cate_list_features:
-            if self.cate_list_concat_way == 'fm':
-                cate_list_embd = tf.concat(
-                    [self.__dict__[name](inputs[name[:-len(self.cate_list_embd_suf)]])
-                     for name in self.__dict__.keys() if name.endswith(self.cate_list_embd_suf)],
-                    axis=1
-                )  # batch_size * (n_cate_features * length) * embd_size
-            elif self.cate_list_concat_way == 'concate':
-                cate_list_embd = tf.concat(
-                    [self.fl(self.__dict__[name](inputs[name[:-len(self.cate_list_embd_suf)]]))
-                     for name in self.__dict__.keys() if name.endswith(self.cate_list_embd_suf)],
-                    axis=1
-                )  # batch_size * (n_cate_features * length * embd_size)
-            elif self.cate_list_concat_way == 'mean':
-                cate_list_embd = tf.concat(
-                    [tf.reduce_mean(self.__dict__[name](inputs[name[:-len(self.cate_list_embd_suf)]]), axis=1)
-                     for name in self.__dict__.keys() if name.endswith(self.cate_list_embd_suf)],
-                    axis=1
-                )  # batch_size * (n_cate_features * embd_size)
-            elif self.cate_list_concat_way == 'sum':
-                cate_list_embd = tf.concat(
-                    [tf.reduce_sum(self.__dict__[name](inputs[name[:-len(self.cate_list_embd_suf)]]), axis=1)
-                     for name in self.__dict__.keys() if name.endswith(self.cate_list_embd_suf)],
-                    axis=1
-                )  # batch_size * (n_cate_features * embd_size)
+            cate_list_embd = tf.concat(
+                [self.cate_list_concat_func(self.__dict__[name](inputs[name[:-len(self.cate_list_embd_suf)]]))
+                 for name in self.__dict__.keys() if name.endswith(self.cate_list_embd_suf)],
+                axis=1
+            )
 
         if self.cate_features:
             if self.cate_list_concat_way == 'fm':
