@@ -12,7 +12,7 @@ class DeepFmRegModel(keras.Model):
         self.fm = FMRegModel(conti_features, cate_features, cate_list_features)
         self.dnn = DnnRegModel(conti_features, cate_features, cate_list_features, dnn_cate_list_concat_way,
                                fc_layers, activation, use_bn, use_drop_out,
-                               drop_p)
+                               drop_p, **kwargs)
 
     def call(self, inputs: dict):
         return self.fm(inputs) + self.dnn(inputs)
@@ -24,7 +24,7 @@ class DeepFmClfModel(DeepFmRegModel):
                  drop_p=0.5, **kwargs):
         super(DeepFmClfModel, self).__init__(conti_features, cate_features, cate_list_features,
                                              dnn_cate_list_concat_way, fc_layers, activation, use_bn,
-                                             use_drop_out, drop_p)
+                                             use_drop_out, drop_p, **kwargs)
 
     def call(self, inputs: dict):
         return tf.nn.sigmoid(super(DeepFmClfModel, self).call(inputs))
