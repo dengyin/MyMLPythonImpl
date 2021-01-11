@@ -3,6 +3,22 @@ from tensorflow import keras
 
 
 class BaseModel(keras.Model):
+    """
+    cate{_list}_features = {
+    'feature_name':
+        {
+            'input_dim': len(vocabulary) + 1,
+            'output_dim': 16,
+            'mask_zero': True,
+            'input_length': 20,
+            'embeddings_initializer': 'glorot_normal'
+        }
+        , .....
+    }
+
+    conti_features = {'feature_name': 'feature_name, ....}
+
+    """
 
     def __init__(self, conti_features: dict, cate_features: dict, cate_list_features: dict,
                  cate_list_concat_way='concate',
