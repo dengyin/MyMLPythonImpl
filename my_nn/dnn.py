@@ -10,7 +10,8 @@ class Dnn(BaseModel):
                  drop_p=0.5, **kwargs):
         super(Dnn, self).__init__(conti_features, conti_embd_features, cate_features, cate_list_features,
                                   cate_list_concat_way, **kwargs)
-        self.layer_list = []
+
+        self.layer_list = [keras.layers.BatchNormalization()] if use_bn else []
 
         for units in fc_layers:
             self.layer_list.append(tf.keras.layers.Dense(units=units))
