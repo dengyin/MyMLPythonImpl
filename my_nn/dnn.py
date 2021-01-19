@@ -5,10 +5,11 @@ from my_nn.base import BaseModel
 
 
 class Dnn(BaseModel):
-    def __init__(self, conti_features: dict, cate_features: dict, cate_list_features: dict,
+    def __init__(self, conti_features: dict, conti_embd_features: dict, cate_features: dict, cate_list_features: dict,
                  cate_list_concat_way='mean', fc_layers=(128,), activation='relu', use_bn=True, use_drop_out=True,
                  drop_p=0.5, **kwargs):
-        super(Dnn, self).__init__(conti_features, cate_features, cate_list_features, cate_list_concat_way, **kwargs)
+        super(Dnn, self).__init__(conti_features, conti_embd_features, cate_features, cate_list_features,
+                                  cate_list_concat_way, **kwargs)
         self.layer_list = []
 
         for units in fc_layers:
@@ -19,7 +20,7 @@ class Dnn(BaseModel):
             if use_drop_out:
                 self.layer_list.append(keras.layers.Dropout(drop_p, seed=42))
 
-        if self.conti_features:
+        if self.conti_embd_features:
             self.fl = tf.keras.layers.Flatten()
 
     def call(self, inputs: dict, **kwargs):
@@ -43,10 +44,10 @@ class Dnn(BaseModel):
 
 
 class DnnClfModel(Dnn):
-    def __init__(self, conti_features: dict, cate_features: dict, cate_list_features: dict,
+    def __init__(self, conti_features: dict, conti_embd_features: dict, cate_features: dict, cate_list_features: dict,
                  cate_list_concat_way='mean', fc_layers=(128,), activation='relu', use_bn=True, use_drop_out=True,
                  drop_p=0.5, n_class=2, **kwargs):
-        super(DnnClfModel, self).__init__(conti_features, cate_features, cate_list_features,
+        super(DnnClfModel, self).__init__(conti_features, conti_embd_features, cate_features, cate_list_features,
                                           cate_list_concat_way, fc_layers, activation, use_bn, use_drop_out,
                                           drop_p, **kwargs)
 
@@ -60,10 +61,10 @@ class DnnClfModel(Dnn):
 
 
 class DnnRegModel(Dnn):
-    def __init__(self, conti_features: dict, cate_features: dict, cate_list_features: dict,
+    def __init__(self, conti_features: dict, conti_embd_features: dict, cate_features: dict, cate_list_features: dict,
                  cate_list_concat_way='mean', fc_layers=(128,), activation='relu', use_bn=True, use_drop_out=True,
                  drop_p=0.5, **kwargs):
-        super(DnnRegModel, self).__init__(conti_features, cate_features, cate_list_features,
+        super(DnnRegModel, self).__init__(conti_features, conti_embd_features, cate_features, cate_list_features,
                                           cate_list_concat_way, fc_layers, activation, use_bn, use_drop_out,
                                           drop_p, **kwargs)
 

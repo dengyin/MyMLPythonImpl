@@ -5,47 +5,61 @@ from tensorflow import keras
 class BaseModel(keras.Model):
     """
     cate{_list}_features = {
-    'feature_name':
-        {
-            'input_dim': len(vocabulary) + 1,
-            'output_dim': 16,
-            'mask_zero': True,
-            'input_length': 20,
-            'embeddings_initializer': 'glorot_normal'
-        }
+        'feature_name':
+            {
+                'input_dim': len(vocabulary) + 1,
+                'output_dim': 16,
+                'mask_zero': True,
+                'input_length': 20,
+                'embeddings_initializer': 'glorot_normal'
+            }
         , .....
     }
 
-    conti_features = {'feature_name': 'feature_name, ....}
+    conti_features = {
+        'feature_name':
+            {
+                'units': 16,
+                use_bias: False
+            }
+        , ....
+    }
 
     """
 
-    def __init__(self, conti_features: dict, cate_features: dict, cate_list_features: dict,
+    def __init__(self, conti_features: dict, conti_embd_features: dict, cate_features: dict, cate_list_features: dict,
                  cate_list_concat_way='concate',
                  **kwargs):
         super(BaseModel, self).__init__(**kwargs)
         self.conti_features = conti_features
+        self.conti_embd_features = conti_embd_features
         self.cate_features = cate_features
         self.cate_list_features = cate_list_features
         self.cate_list_concat_way = cate_list_concat_way
 
+        self.conti_embd_suf = '_conti_embd'
         self.cate_list_embd_suf = '_cate_list_embd'
         self.cate_embd_suf = '_cate_embd'
 
         self.fl = keras.layers.Flatten()
 
+        if self.conti_embd_features:
+            for name in self.conti_embd_features.keys():
+                seq = tf.keras.Sequential([
+                        tf.keras.layers.BatchNormalization(name=name + '_bn'),
+                        tf.keras.layers.Dense(**self.conti_embd_features[name], name=name + self.conti_embd_suf)
+                    ])
+                setattr(self, name + self.conti_embd_suf, seq)
+
         if self.cate_list_features:
             for name in self.cate_list_features.keys():
                 setattr(self, name + self.cate_list_embd_suf,
                         tf.keras.layers.Embedding(**self.cate_list_features[name], name=name + self.cate_list_embd_suf))
-                self.__dict__[name + self.cate_list_embd_suf].build(
-                    (None, self.cate_list_features[name]['input_length']))
 
         if self.cate_features:
             for name in self.cate_features.keys():
                 setattr(self, name + self.cate_embd_suf,
                         tf.keras.layers.Embedding(**self.cate_features[name], name=name + self.cate_embd_suf))
-                self.__dict__[name + self.cate_embd_suf].build((None, self.cate_features[name]['input_length']))
 
         if self.cate_list_concat_way == 'fm':
             self.cate_list_concat_func = lambda x: x
@@ -57,42 +71,62 @@ class BaseModel(keras.Model):
             self.cate_list_concat_func = lambda x: tf.reduce_sum(x, axis=1)
 
     def call(self, inputs: dict, **kwargs):
+        result = []
         if self.cate_list_features:
-            cate_list_embd = tf.concat(
+            result.append(tf.concat(
                 [self.cate_list_concat_func(self.__dict__[name](inputs[name[:-len(self.cate_list_embd_suf)]]))
                  for name in self.__dict__.keys() if name.endswith(self.cate_list_embd_suf)],
                 axis=1
-            )
+            ))
 
         if self.cate_features:
             if self.cate_list_concat_way == 'fm':
-                cate_embd = tf.concat(
+                result.append(tf.concat(
                     [self.__dict__[name](inputs[name[:-len(self.cate_embd_suf)]])
                      for name in self.__dict__.keys() if name.endswith(self.cate_embd_suf)],
                     axis=1
-                )  # batch_size * n_cate_features * embd_size
+                ))  # batch_size * n_cate_features * embd_size
             else:
-                cate_embd = tf.concat(
+                result.append(tf.concat(
                     [self.fl(self.__dict__[name](inputs[name[:-len(self.cate_embd_suf)]]))
                      for name in self.__dict__.keys() if name.endswith(self.cate_embd_suf)],
                     axis=1
-                )  # batch_size * (n_cate_features * embd_size)
+                ))  # batch_size * (n_cate_features * embd_size)
 
-        if self.cate_features and self.cate_list_features:
-            return tf.concat([cate_list_embd, cate_embd], axis=1)
-        elif self.cate_features:
-            return cate_embd
+        if self.conti_embd_features:
+            if self.cate_list_concat_way == 'fm':
+                result.append(tf.concat(
+                    [tf.expand_dims(self.__dict__[name](inputs[name[:-len(self.conti_embd_suf)]]), axis=1)
+                     for name in self.__dict__.keys() if name.endswith(self.conti_embd_suf)],
+                    axis=1
+                ))  # batch_size * n_cate_features * embd_size
+            else:
+                result.append(tf.concat(
+                    [self.fl(self.__dict__[name](inputs[name[:-len(self.conti_embd_suf)]]))
+                     for name in self.__dict__.keys() if name.endswith(self.conti_embd_suf)],
+                    axis=1
+                ))  # batch_size * (n_cate_features * embd_size)
+
+        if len(result) > 1:
+            return tf.concat(result, axis=1)
         else:
-            return cate_list_embd
+            return result[0]
 
-    def create_input(self, data):
+    def create_input(self, data, return_input_shape=False):
         result = {}
+        input_shape = {}
         if self.conti_features:
             for name in self.conti_features.keys():
                 result[name] = data[name].astype('float32')
+                input_shape[name] = (None, 1)
+        if self.conti_embd_features:
+            for name in self.conti_embd_features.keys():
+                result[name] = data[name].astype('float32')
+                input_shape[name] = (None, 1)
         if self.cate_features:
             for name in self.cate_features.keys():
                 result[name] = data[name]
+                input_shape[name] = (None, 1)
         if self.cate_list_features:
             for name in self.cate_list_features.keys():
                 result[name] = tf.keras.preprocessing.sequence.pad_sequences(
@@ -102,4 +136,8 @@ class BaseModel(keras.Model):
                     padding='pre',
                     truncating='pre', value=0.0
                 )
-        return result
+                input_shape[name] = (None, self.cate_list_features[name]['input_length'])
+        if return_input_shape:
+            return result, input_shape
+        else:
+            return result
