@@ -6,38 +6,61 @@ from tensorflow import keras
 from my_nn.base import BaseModel
 
 
-class FMLayer(BaseModel):
+class BiInteraction(BaseModel):
 
-    def __init__(self, conti_embd_features: dict, cate_features: dict, cate_list_features: dict, **kwargs):
-        super(FMLayer, self).__init__(None, conti_embd_features, cate_features, cate_list_features, 'fm', **kwargs)
+    def __init__(self, conti_embd_features: dict, cate_features: dict, cate_list_features: dict, fc_layers=(128,),
+                 activation='relu', use_bn=True, use_drop_out=True,
+                 drop_p=0.5, output_dim=1, **kwargs):
+        super(BiInteraction, self).__init__(None, conti_embd_features, cate_features, cate_list_features, 'fm',
+                                            **kwargs)
+
+        self.output_dim = output_dim
+        self.layer_list = [keras.layers.BatchNormalization()] if use_bn else []
+
+        for units in fc_layers:
+            self.layer_list.append(tf.keras.layers.Dense(units=units))
+            if use_bn:
+                self.layer_list.append(keras.layers.BatchNormalization())
+            self.layer_list.append(keras.layers.Activation(activation))
+            if use_drop_out:
+                self.layer_list.append(keras.layers.Dropout(drop_p, seed=42))
+
         self.fl = tf.keras.layers.Flatten()
 
+        self.output_layer = tf.keras.layers.Dense(units=self.output_dim)
+
     def call(self, inputs: dict, **kwargs):
-        embd_vecs = super(FMLayer, self).call(inputs)  # batch_size * n * embd_size
-        embd_vecs_square = tf.matmul(embd_vecs, embd_vecs, transpose_b=True)
-        outputs = 0.5 * (tf.reduce_sum(tf.reshape(embd_vecs_square, (-1, embd_vecs.shape[1] ** 2)),
-                                       axis=1) - tf.linalg.trace(embd_vecs_square))
-        return self.fl(outputs)
+        embd_vecs = super(BiInteraction, self).call(inputs)  # batch_size * n * embd_size
+        embd_vecs_sum_square = tf.reduce_sum(embd_vecs, axis=1) ** 2
+        embd_vecs_square_sum = tf.reduce_sum(embd_vecs ** 2, axis=1)
+        outputs = 0.5 * (embd_vecs_sum_square - embd_vecs_square_sum)
+        outputs = self.fl(outputs)
+        for layer in self.layer_list:
+            outputs = layer(outputs)
+        return self.output_layer(outputs)  # batch_size * k
 
 
-class FMRegModel(tf.keras.Model):
+class NFMRegModel(tf.keras.Model):
     def __init__(self, conti_features: dict, conti_embd_features: dict, cate_features: dict, cate_list_features: dict,
+                 fc_layers=(128,), activation='relu', use_bn=True, use_drop_out=True, drop_p=0.5, output_dim=1,
                  **kwargs):
-        super(FMRegModel, self).__init__(**kwargs)
+        super(NFMRegModel, self).__init__(**kwargs)
 
+        self.output_dim = output_dim
         self.conti_features = conti_features
         self.conti_embd_features = conti_embd_features
         self.cate_features = cate_features
         self.cate_list_features = cate_list_features
 
-        self.fm_layer = FMLayer(self.conti_embd_features, self.cate_features, self.cate_list_features)
+        self.bi_interaction = BiInteraction(self.conti_embd_features, self.cate_features, self.cate_list_features,
+                                            fc_layers, activation, use_bn, use_drop_out, drop_p, output_dim)
 
         if self.cate_list_features:
             for name in self.cate_list_features.keys():
                 setattr(self, name + '_first_order',
                         tf.keras.layers.Embedding(
                             **remove_key(self.cate_list_features[name], 'output_dim'),
-                            output_dim=1,
+                            output_dim=self.output_dim,
                             name=name + '_first_order'))
 
         if self.cate_features:
@@ -45,16 +68,16 @@ class FMRegModel(tf.keras.Model):
                 setattr(self, name + '_first_order',
                         tf.keras.layers.Embedding(
                             **remove_key(self.cate_features[name], 'output_dim'),
-                            output_dim=1,
+                            output_dim=self.output_dim,
                             name=name + '_first_order'
                         ))
 
         if self.conti_features:
             self.bn1 = keras.layers.BatchNormalization()
-            self.dense1 = tf.keras.layers.Dense(units=1, name='dense_first_order')
+            self.dense1 = tf.keras.layers.Dense(units=self.output_dim, name='dense_first_order')
         if self.conti_embd_features:
             self.bn2 = keras.layers.BatchNormalization()
-            self.dense2 = tf.keras.layers.Dense(units=1, name='dense_first_order')
+            self.dense2 = tf.keras.layers.Dense(units=self.output_dim, name='dense_first_order')
         self.fl = tf.keras.layers.Flatten()
 
     def call(self, inputs: dict):
@@ -81,7 +104,7 @@ class FMRegModel(tf.keras.Model):
                         )  # batch_size * n
                     )
                 )
-            )
+            )  # batch_size * k
 
         if self.conti_embd_features:
             first_order += self.fl(
@@ -95,21 +118,22 @@ class FMRegModel(tf.keras.Model):
                         )  # batch_size * n
                     )
                 )
-            )
+            )  # batch_size * k
 
-        second_order = self.fm_layer(inputs)  # batch_size * 1
+        second_order = self.bi_interaction(inputs)  # batch_size * k
 
         return first_order + second_order
 
 
-class FMClfModel(FMRegModel):
+class NFMClfModel(NFMRegModel):
     def __init__(self, conti_features: dict, conti_embd_features: dict, cate_features: dict, cate_list_features: dict,
+                 fc_layers=(128,), activation='relu', use_bn=True, use_drop_out=True, drop_p=0.5, output_dim=1,
                  **kwargs):
-        super(FMClfModel, self).__init__(conti_features, conti_embd_features, cate_features, cate_list_features,
-                                         **kwargs)
+        super(NFMClfModel, self).__init__(conti_features, conti_embd_features, cate_features, cate_list_features,
+                                          fc_layers, activation, use_bn, use_drop_out, drop_p, output_dim, **kwargs)
 
     def call(self, inputs: dict):
-        return tf.nn.sigmoid(super(FMClfModel, self).call(inputs))
+        return tf.nn.softmax(super(NFMClfModel, self).call(inputs))
 
 
 def remove_key(d: dict, key):
