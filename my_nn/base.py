@@ -46,9 +46,9 @@ class BaseModel(keras.Model):
         if self.conti_embd_features:
             for name in self.conti_embd_features.keys():
                 seq = tf.keras.Sequential([
-                        tf.keras.layers.BatchNormalization(name=name + '_bn'),
-                        tf.keras.layers.Dense(**self.conti_embd_features[name], name=name + self.conti_embd_suf)
-                    ])
+                    tf.keras.layers.BatchNormalization(name=name + '_bn'),
+                    tf.keras.layers.Dense(**self.conti_embd_features[name], name=name + self.conti_embd_suf)
+                ])
                 setattr(self, name + self.conti_embd_suf, seq)
 
         if self.cate_list_features:
@@ -117,25 +117,25 @@ class BaseModel(keras.Model):
         input_shape = {}
         if self.conti_features:
             for name in self.conti_features.keys():
-                result[name] = data[name].astype('float32')
+                result[name] = tf.convert_to_tensor(data[name].values.reshape(-1, 1), dtype=tf.float32)
                 input_shape[name] = (None, 1)
         if self.conti_embd_features:
             for name in self.conti_embd_features.keys():
-                result[name] = data[name].astype('float32')
+                result[name] = tf.convert_to_tensor(data[name].values.reshape(-1, 1), dtype=tf.float32)
                 input_shape[name] = (None, 1)
         if self.cate_features:
             for name in self.cate_features.keys():
-                result[name] = data[name]
+                result[name] = tf.convert_to_tensor(data[name].values.reshape(-1, 1), dtype=tf.int32)
                 input_shape[name] = (None, 1)
         if self.cate_list_features:
             for name in self.cate_list_features.keys():
-                result[name] = tf.keras.preprocessing.sequence.pad_sequences(
+                result[name] = tf.convert_to_tensor(tf.keras.preprocessing.sequence.pad_sequences(
                     data[name].apply(lambda x: [a for a in x if isinstance(a, int)]),
                     maxlen=self.cate_list_features[name]['input_length'],
                     dtype='int32',
                     padding='pre',
                     truncating='pre', value=0.0
-                )
+                ))
                 input_shape[name] = (None, self.cate_list_features[name]['input_length'])
         if return_input_shape:
             return result, input_shape
