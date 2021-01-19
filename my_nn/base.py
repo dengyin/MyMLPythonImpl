@@ -4,7 +4,7 @@ from tensorflow import keras
 
 class BaseModel(keras.Model):
     """
-    cate{_list}_features = {
+    cate{_list}_features = { embdding parameter
         'feature_name':
             {
                 'input_dim': len(vocabulary) + 1,
@@ -16,12 +16,17 @@ class BaseModel(keras.Model):
         , .....
     }
 
-    conti_features = {
+    conti_embd_features = { dense parameter
         'feature_name':
             {
                 'units': 16,
                 use_bias: False
             }
+        , ....
+    }
+
+    conti_features = {
+        'feature_name':'feature_name'
         , ....
     }
 

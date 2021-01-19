@@ -2,6 +2,7 @@ from .base import BaseModel
 from .fm import FMClfModel, FMRegModel
 from .dnn import DnnClfModel, DnnRegModel
 from .deepfm import DeepFmClfModel, DeepFmRegModel
+from .nfm import NFMRegModel, NFMClfModel
 
 __all__ = [
     'BaseModel',
@@ -10,5 +11,7 @@ __all__ = [
     'DnnRegModel',
     'DnnClfModel',
     'DeepFmClfModel',
-    'DeepFmRegModel'
+    'DeepFmRegModel',
+    'NFMRegModel',
+    'NFMClfModel'
 ]

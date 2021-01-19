@@ -127,7 +127,7 @@ class NFMRegModel(tf.keras.Model):
 
 class NFMClfModel(NFMRegModel):
     def __init__(self, conti_features: dict, conti_embd_features: dict, cate_features: dict, cate_list_features: dict,
-                 fc_layers=(128,), activation='relu', use_bn=True, use_drop_out=True, drop_p=0.5, output_dim=1,
+                 fc_layers=(128,), activation='relu', use_bn=True, use_drop_out=True, drop_p=0.5, output_dim=2,
                  **kwargs):
         super(NFMClfModel, self).__init__(conti_features, conti_embd_features, cate_features, cate_list_features,
                                           fc_layers, activation, use_bn, use_drop_out, drop_p, output_dim, **kwargs)
