@@ -4,6 +4,7 @@ from .fm import FMClfModel, FMRegModel
 from .dnn import DnnClfModel, DnnRegModel
 from .deepfm import DeepFmClfModel, DeepFmRegModel
 from .nfm import NFMRegModel, NFMClfModel
+from .autotnt import AutoIntRegModel, AutoIntClfModel
 
 __all__ = [
     'BaseModel',
@@ -16,5 +17,7 @@ __all__ = [
     'DeepFmClfModel',
     'DeepFmRegModel',
     'NFMRegModel',
-    'NFMClfModel'
+    'NFMClfModel',
+    'AutoIntRegModel',
+    'AutoIntClfModel'
 ]

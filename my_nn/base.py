@@ -53,7 +53,7 @@ class BaseModel(keras.Model):
                 seq = tf.keras.Sequential([
                     tf.keras.layers.BatchNormalization(name=name + '_bn'),
                     tf.keras.layers.Dense(**self.conti_embd_features[name], name=name + self.conti_embd_suf)
-                ])
+                ], name=name)
                 setattr(self, name + self.conti_embd_suf, seq)
 
         if self.cate_list_features:
