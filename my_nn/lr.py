@@ -16,53 +16,52 @@ class LRRegModel(tf.keras.Model):
         self.conti_embd_features = conti_embd_features
         self.cate_features = cate_features
         self.cate_list_features = cate_list_features
+        self.cats_feature = []
 
         if self.cate_list_features:
             for name in self.cate_list_features.keys():
-                setattr(self, name + '_first_order',
+                self.cats_feature.append(name)
+                setattr(self, name,
                         tf.keras.layers.Embedding(
                             **remove_key(self.cate_list_features[name], 'output_dim'),
                             output_dim=self.output_dim,
-                            name=name + '_first_order'))
+                            name=name))
 
         if self.cate_features:
             for name in self.cate_features.keys():
-                setattr(self, name + '_first_order',
+                self.cats_feature.append(name)
+                setattr(self, name,
                         tf.keras.layers.Embedding(
                             **remove_key(self.cate_features[name], 'output_dim'),
                             output_dim=self.output_dim,
-                            name=name + '_first_order'
+                            name=name
                         ))
 
         if self.conti_features:
             self.bn1 = keras.layers.BatchNormalization()
-            self.dense1 = tf.keras.layers.Dense(units=self.output_dim, name='dense_first_order')
+            self.dense1 = tf.keras.layers.Dense(units=self.output_dim, name='conti_features')
         if self.conti_embd_features:
             self.bn2 = keras.layers.BatchNormalization()
-            self.dense2 = tf.keras.layers.Dense(units=self.output_dim, name='dense_first_order')
+            self.dense2 = tf.keras.layers.Dense(units=self.output_dim, name='conti_embd_features')
         self.fl = tf.keras.layers.Flatten()
 
     def call(self, inputs: dict):
-        cats_feature = [name for name in
-                        self.__dict__.keys() if name.endswith('_first_order')]
         result = self.fl(
             tf.reduce_sum(
                 tf.concat(
-                    [self.__dict__[name](inputs[name[:-len('_first_order')]]) for name in cats_feature],
+                    [self.__dict__[name](inputs[name]) for name in self.cats_feature],
                     axis=1
                 )
                 , axis=1)
-        ) if cats_feature else 0
+        ) if self.cats_feature else 0
 
         if self.conti_features:
             result += self.fl(
                 self.dense1(
                     self.bn1(
-                        tf.reshape(
-                            tf.stack(
-                                [inputs[name] for name in self.conti_features.keys()],
-                                axis=-1
-                            ), (-1, len(self.conti_features.keys()))
+                        tf.concat(
+                            [inputs[name] for name in self.conti_features.keys()],
+                            axis=-1
                         )  # batch_size * n
                     )
                 )
@@ -72,11 +71,9 @@ class LRRegModel(tf.keras.Model):
             result += self.fl(
                 self.dense2(
                     self.bn2(
-                        tf.reshape(
-                            tf.stack(
-                                [inputs[name] for name in self.conti_embd_features.keys()],
-                                axis=-1
-                            ), (-1, len(self.conti_embd_features.keys()))
+                        tf.concat(
+                            [inputs[name] for name in self.conti_embd_features.keys()],
+                            axis=-1
                         )  # batch_size * n
                     )
                 )
