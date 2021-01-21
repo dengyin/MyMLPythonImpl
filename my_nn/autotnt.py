@@ -79,21 +79,31 @@ class InteractingLayer(tf.keras.Model):
 
 class AutoIntRegModel(BaseModel):
     def __init__(self, conti_embd_features: dict, cate_features: dict, cate_list_features: dict, output_dim=1,
-                 interacting_input_dim=8, interacting_output_dim=6, n_attention_head=2, interacting_n_layers=1,
+                 interacting_output_dim=6, n_attention_head=2, interacting_n_layers=1,
                  fc_layers=(128,), activation='relu', use_bn=True, use_drop_out=True,
                  drop_p=0.5, **kwargs):
         super(AutoIntRegModel, self).__init__(None, conti_embd_features, cate_features, cate_list_features,
                                               cate_list_concat_way='mean', **kwargs)
 
         self.output_dim = output_dim
-        self.n_features = 0
-        self.n_features += len(self.conti_embd_features) if self.conti_embd_features else 0
-        self.n_features += len(self.cate_features) if self.cate_features else 0
-        self.n_features += len(self.cate_list_features) if self.cate_list_features else 0
         self.interacting_output_dim = interacting_output_dim
         self.n_attention_head = n_attention_head
         self.interacting_n_layers = interacting_n_layers
-        self.interacting_input_dim = interacting_input_dim  # embedding dim
+        self.features = {}
+        if self.conti_embd_features:
+            self.features.update(self.conti_embd_features)
+        if self.cate_features:
+            self.features.update(self.cate_features)
+        if self.cate_list_features:
+            self.features.update(self.cate_list_features)
+        self.interacting_input_dim = 0  # embedding dim
+        for key in self.features.keys():
+            self.interacting_input_dim = self.features.get(key).get('output_dim') if self.features.get(key).get(
+                'output_dim') else 0
+            self.interacting_input_dim = self.features.get(key).get('units') if self.features.get(key).get(
+                'units') else self.interacting_input_dim
+            if self.interacting_input_dim > 0:
+                break
 
         self.InteractingLayer = InteractingLayer(self.interacting_input_dim, self.interacting_output_dim,
                                                  self.n_attention_head, self.interacting_n_layers)
@@ -111,7 +121,7 @@ class AutoIntRegModel(BaseModel):
 
     def call(self, inputs: dict):
         embd_vecs = super(AutoIntRegModel, self).call(inputs)
-        result = tf.reshape(embd_vecs, (tf.shape(embd_vecs)[0], self.n_features, self.interacting_input_dim))
+        result = tf.reshape(embd_vecs, (tf.shape(embd_vecs)[0], len(self.features), self.interacting_input_dim))
         result = self.InteractingLayer(result)
         for layer in self.layer_list:
             result = layer(result)
@@ -120,11 +130,10 @@ class AutoIntRegModel(BaseModel):
 
 class AutoIntClfModel(AutoIntRegModel):
     def __init__(self, conti_embd_features: dict, cate_features: dict, cate_list_features: dict, output_dim=1,
-                 interacting_input_dim=8, interacting_output_dim=6, n_attention_head=2, interacting_n_layers=1,
-                 fc_layers=(128,), activation='relu', use_bn=True, use_drop_out=True,
-                 drop_p=0.5, **kwargs):
+                 interacting_output_dim=6, n_attention_head=2, interacting_n_layers=1,
+                 fc_layers=(128,), activation='relu', use_bn=True, use_drop_out=True, drop_p=0.5, **kwargs):
         super(AutoIntClfModel, self).__init__(conti_embd_features, cate_features, cate_list_features, output_dim,
-                                              interacting_input_dim, interacting_output_dim, n_attention_head,
+                                              interacting_output_dim, n_attention_head,
                                               interacting_n_layers, fc_layers, activation, use_bn, use_drop_out,
                                               drop_p, **kwargs)
         self.output_func = tf.nn.softmax if self.output_dim >= 2 else tf.nn.sigmoid
