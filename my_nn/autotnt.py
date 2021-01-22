@@ -28,12 +28,12 @@ class InteractingLayer(tf.keras.layers.Layer):
         xl = x0
         result = []
         for l in range(self.n_layers):
-            x_res = self.fl(self.W_res[l](xl))
+            x_res = self.W_res[l](xl)
             xl = self.multi_head_attention[l](xl, xl, xl, None, False)
-            xl = tf.nn.relu(self.fl(xl) + x_res)
+            xl = tf.nn.relu(xl + x_res)
             result.append(xl)
 
-        return self.fl(tf.concat(result, axis=-1))  # ?, n_feats * output_dim * n_layers
+        return self.fl(tf.concat(result, axis=1))  # ?, n_feats * output_dim * n_layers
 
 
 class AutoIntRegModel(BaseModel):
@@ -69,12 +69,21 @@ class AutoIntRegModel(BaseModel):
             if use_drop_out:
                 self.layer_list.append(keras.layers.Dropout(drop_p, seed=42, name=f'dropout_h{h + 1}'))
 
+        self.embd_dim = 0
+        for key in self.features.keys():
+            self.embd_dim = self.features.get(key).get('output_dim') if self.features.get(key).get(
+                'output_dim') else 0
+            self.embd_dim = self.features.get(key).get('units') if self.features.get(key).get(
+                'units') else self.embd_dim
+            if self.embd_dim > 0:
+                break
+
         self.output_layer = tf.keras.layers.Dense(units=self.output_dim)
 
     def call(self, inputs: dict):
         embd_vecs = super(AutoIntRegModel, self).call(inputs)
         result = embd_vecs if self.cate_list_concat_way == 'fm' else tf.reshape(embd_vecs, (
-            tf.shape(embd_vecs)[0], len(self.features), -1))
+            tf.shape(embd_vecs)[0], len(self.features), self.embd_dim))
         result = self.InteractingLayer(result)
         for layer in self.layer_list:
             result = layer(result)
