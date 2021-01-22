@@ -13,13 +13,13 @@ class Dnn(BaseModel):
 
         self.layer_list = [keras.layers.BatchNormalization()] if use_bn else []
 
-        for units in fc_layers:
-            self.layer_list.append(tf.keras.layers.Dense(units=units))
+        for h, units in enumerate(fc_layers):
+            self.layer_list.append(tf.keras.layers.Dense(units=units, name=f'dense_h{h + 1}'))
             if use_bn:
-                self.layer_list.append(keras.layers.BatchNormalization())
-            self.layer_list.append(keras.layers.Activation(activation))
+                self.layer_list.append(keras.layers.BatchNormalization(name=f'bn_h{h + 1}'))
+            self.layer_list.append(keras.layers.Activation(activation, name=f'acti_h{h + 1}'))
             if use_drop_out:
-                self.layer_list.append(keras.layers.Dropout(drop_p, seed=42))
+                self.layer_list.append(keras.layers.Dropout(drop_p, seed=42, name=f'dropout_h{h + 1}'))
 
         if self.conti_embd_features:
             self.fl = tf.keras.layers.Flatten()
