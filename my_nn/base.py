@@ -60,14 +60,12 @@ class BaseModel(keras.Model):
         if self.cate_list_features:
             for name in self.cate_list_features.keys():
                 setattr(self, name + self.cate_list_embd_suf,
-                        tf.keras.layers.Embedding(**self.cate_list_features[name], name=name + self.cate_list_embd_suf,
-                                                  embeddings_regularizer=self.regularizer))
+                        tf.keras.layers.Embedding(**self.cate_list_features[name], name=name + self.cate_list_embd_suf))
 
         if self.cate_features:
             for name in self.cate_features.keys():
                 setattr(self, name + self.cate_embd_suf,
-                        tf.keras.layers.Embedding(**self.cate_features[name], name=name + self.cate_embd_suf,
-                                                  embeddings_regularizer=self.regularizer))
+                        tf.keras.layers.Embedding(**self.cate_features[name], name=name + self.cate_embd_suf))
 
         if self.cate_list_concat_way == 'fm':
             self.cate_list_concat_func = lambda x: x
