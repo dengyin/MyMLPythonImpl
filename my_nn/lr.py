@@ -8,7 +8,7 @@ from my_nn.base import BaseModel
 
 class LRRegModel(tf.keras.Model):
     def __init__(self, conti_features: dict, conti_embd_features: dict, cate_features: dict, cate_list_features: dict,
-                 output_dim=1, **kwargs):
+                 output_dim=1, regularizer=tf.keras.regularizers.L2(0.01), **kwargs):
         super(LRRegModel, self).__init__(**kwargs)
 
         self.output_dim = output_dim
@@ -17,6 +17,7 @@ class LRRegModel(tf.keras.Model):
         self.cate_features = cate_features
         self.cate_list_features = cate_list_features
         self.cats_feature = []
+        self.regularizer = regularizer
 
         if self.cate_list_features:
             for name in self.cate_list_features.keys():
@@ -24,7 +25,7 @@ class LRRegModel(tf.keras.Model):
                 setattr(self, name,
                         tf.keras.layers.Embedding(
                             **remove_key(self.cate_list_features[name], 'output_dim'),
-                            output_dim=self.output_dim,
+                            output_dim=self.output_dim, embeddings_regularizer=self.regularizer,
                             name=name))
 
         if self.cate_features:
@@ -33,16 +34,18 @@ class LRRegModel(tf.keras.Model):
                 setattr(self, name,
                         tf.keras.layers.Embedding(
                             **remove_key(self.cate_features[name], 'output_dim'),
-                            output_dim=self.output_dim,
+                            output_dim=self.output_dim, embeddings_regularizer=self.regularizer,
                             name=name
                         ))
 
         if self.conti_features:
             self.bn1 = keras.layers.BatchNormalization()
-            self.dense1 = tf.keras.layers.Dense(units=self.output_dim, name='conti_features')
+            self.dense1 = tf.keras.layers.Dense(units=self.output_dim, name='conti_features',
+                                                kernel_regularizer=self.regularizer, bias_regularizer=self.regularizer)
         if self.conti_embd_features:
             self.bn2 = keras.layers.BatchNormalization()
-            self.dense2 = tf.keras.layers.Dense(units=self.output_dim, name='conti_embd_features')
+            self.dense2 = tf.keras.layers.Dense(units=self.output_dim, name='conti_embd_features',
+                                                kernel_regularizer=self.regularizer, bias_regularizer=self.regularizer)
         self.fl = tf.keras.layers.Flatten()
 
     def call(self, inputs: dict):

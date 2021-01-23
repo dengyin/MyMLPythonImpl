@@ -9,8 +9,10 @@ from my_nn.base import BaseModel
 
 class FMLayer(BaseModel):
 
-    def __init__(self, conti_embd_features: dict, cate_features: dict, cate_list_features: dict, **kwargs):
-        super(FMLayer, self).__init__(None, conti_embd_features, cate_features, cate_list_features, 'fm', **kwargs)
+    def __init__(self, conti_embd_features: dict, cate_features: dict, cate_list_features: dict,
+                 regularizer=tf.keras.regularizers.L2(0.01), **kwargs):
+        super(FMLayer, self).__init__(None, conti_embd_features, cate_features, cate_list_features, 'fm', regularizer,
+                                      **kwargs)
         self.fl = tf.keras.layers.Flatten()
 
     def call(self, inputs: dict, **kwargs):
@@ -23,17 +25,18 @@ class FMLayer(BaseModel):
 
 class FMRegModel(tf.keras.Model):
     def __init__(self, conti_features: dict, conti_embd_features: dict, cate_features: dict, cate_list_features: dict,
-                 **kwargs):
+                 regularizer=tf.keras.regularizers.L2(0.01), **kwargs):
         super(FMRegModel, self).__init__(**kwargs)
 
         self.conti_features = conti_features
         self.conti_embd_features = conti_embd_features
         self.cate_features = cate_features
         self.cate_list_features = cate_list_features
+        self.regularizer = regularizer
 
-        self.fm_layer = FMLayer(self.conti_embd_features, self.cate_features, self.cate_list_features)
+        self.fm_layer = FMLayer(self.conti_embd_features, self.cate_features, self.cate_list_features, self.regularizer)
         self.lr = LRRegModel(self.conti_features, self.conti_embd_features, self.cate_features, self.cate_list_features,
-                             1)
+                             1, regularizer=self.regularizer)
 
     def call(self, inputs: dict):
         first_order = self.lr(inputs)
@@ -43,9 +46,9 @@ class FMRegModel(tf.keras.Model):
 
 class FMClfModel(FMRegModel):
     def __init__(self, conti_features: dict, conti_embd_features: dict, cate_features: dict, cate_list_features: dict,
-                 **kwargs):
+                 regularizer=tf.keras.regularizers.L2(0.01), **kwargs):
         super(FMClfModel, self).__init__(conti_features, conti_embd_features, cate_features, cate_list_features,
-                                         **kwargs)
+                                         regularizer=regularizer, **kwargs)
 
     def call(self, inputs: dict):
         return tf.nn.sigmoid(super(FMClfModel, self).call(inputs))

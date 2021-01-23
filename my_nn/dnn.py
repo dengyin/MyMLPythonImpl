@@ -7,14 +7,16 @@ from my_nn.base import BaseModel
 class Dnn(BaseModel):
     def __init__(self, conti_features: dict, conti_embd_features: dict, cate_features: dict, cate_list_features: dict,
                  cate_list_concat_way='mean', fc_layers=(128,), activation='relu', use_bn=True, use_drop_out=True,
-                 drop_p=0.5, **kwargs):
+                 drop_p=0.5, regularizer=tf.keras.regularizers.L2(0.01), **kwargs):
         super(Dnn, self).__init__(conti_features, conti_embd_features, cate_features, cate_list_features,
-                                  cate_list_concat_way, **kwargs)
+                                  cate_list_concat_way, regularizer, **kwargs)
 
         self.layer_list = [keras.layers.BatchNormalization()] if use_bn else []
 
         for h, units in enumerate(fc_layers):
-            self.layer_list.append(tf.keras.layers.Dense(units=units, name=f'dense_h{h + 1}'))
+            self.layer_list.append(
+                tf.keras.layers.Dense(units=units, name=f'dense_h{h + 1}', kernel_regularizer=self.regularizer,
+                                      bias_regularizer=self.regularizer))
             if use_bn:
                 self.layer_list.append(keras.layers.BatchNormalization(name=f'bn_h{h + 1}'))
             self.layer_list.append(keras.layers.Activation(activation, name=f'acti_h{h + 1}'))
@@ -47,10 +49,10 @@ class Dnn(BaseModel):
 class DnnClfModel(Dnn):
     def __init__(self, conti_features: dict, conti_embd_features: dict, cate_features: dict, cate_list_features: dict,
                  cate_list_concat_way='mean', fc_layers=(128,), activation='relu', use_bn=True, use_drop_out=True,
-                 drop_p=0.5, n_class=2, **kwargs):
+                 drop_p=0.5, n_class=2, regularizer=tf.keras.regularizers.L2(0.01), **kwargs):
         super(DnnClfModel, self).__init__(conti_features, conti_embd_features, cate_features, cate_list_features,
                                           cate_list_concat_way, fc_layers, activation, use_bn, use_drop_out,
-                                          drop_p, **kwargs)
+                                          drop_p, regularizer, **kwargs)
 
         self.output_func = keras.layers.Dense(units=1 if n_class == 2 else n_class,
                                               activation='sigmoid' if n_class == 2 else 'softmax')
@@ -64,10 +66,10 @@ class DnnClfModel(Dnn):
 class DnnRegModel(Dnn):
     def __init__(self, conti_features: dict, conti_embd_features: dict, cate_features: dict, cate_list_features: dict,
                  cate_list_concat_way='mean', fc_layers=(128,), activation='relu', use_bn=True, use_drop_out=True,
-                 drop_p=0.5, **kwargs):
+                 drop_p=0.5, regularizer=tf.keras.regularizers.L2(0.01), **kwargs):
         super(DnnRegModel, self).__init__(conti_features, conti_embd_features, cate_features, cate_list_features,
                                           cate_list_concat_way, fc_layers, activation, use_bn, use_drop_out,
-                                          drop_p, **kwargs)
+                                          drop_p, regularizer=regularizer, **kwargs)
 
         self.output_func = keras.layers.Dense(units=1)
 

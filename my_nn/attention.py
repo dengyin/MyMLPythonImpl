@@ -2,18 +2,22 @@ import tensorflow as tf
 
 
 class MultiHeadAttention(tf.keras.layers.Layer):
-    def __init__(self, output_dim, num_heads):
+    def __init__(self, output_dim, num_heads, regularizer=tf.keras.regularizers.L2(0.01)):
         super(MultiHeadAttention, self).__init__()
         self.num_heads = num_heads
         self.output_dim = output_dim
+        self.regularizer = regularizer
 
         assert output_dim % self.num_heads == 0
 
         self.depth = output_dim // self.num_heads
 
-        self.wq = tf.keras.layers.Dense(output_dim)
-        self.wk = tf.keras.layers.Dense(output_dim)
-        self.wv = tf.keras.layers.Dense(output_dim)
+        self.wq = tf.keras.layers.Dense(output_dim, kernel_regularizer=self.regularizer,
+                                        bias_regularizer=self.regularizer)
+        self.wk = tf.keras.layers.Dense(output_dim, kernel_regularizer=self.regularizer,
+                                        bias_regularizer=self.regularizer)
+        self.wv = tf.keras.layers.Dense(output_dim, kernel_regularizer=self.regularizer,
+                                        bias_regularizer=self.regularizer)
 
     def split_heads(self, x, batch_size):
         """分拆最后一个维度到 (num_heads, depth).

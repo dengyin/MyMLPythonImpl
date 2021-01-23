@@ -10,8 +10,7 @@ class BaseModel(keras.Model):
                 'input_dim': len(vocabulary) + 1,
                 'output_dim': 16,
                 'mask_zero': True,
-                'input_length': 20,
-                'embeddings_initializer': 'glorot_normal'
+                'input_length': 20
             }
         , .....
     }
@@ -33,14 +32,15 @@ class BaseModel(keras.Model):
     """
 
     def __init__(self, conti_features: dict, conti_embd_features: dict, cate_features: dict, cate_list_features: dict,
-                 cate_list_concat_way='concate',
-                 **kwargs):
+                 cate_list_concat_way='concate', regularizer=tf.keras.regularizers.L2(0.01), **kwargs):
         super(BaseModel, self).__init__(**kwargs)
         self.conti_features = conti_features
         self.conti_embd_features = conti_embd_features
         self.cate_features = cate_features
         self.cate_list_features = cate_list_features
         self.cate_list_concat_way = cate_list_concat_way
+
+        self.regularizer = regularizer
 
         self.conti_embd_suf = '_conti_embd'
         self.cate_list_embd_suf = '_cate_list_embd'
@@ -52,19 +52,22 @@ class BaseModel(keras.Model):
             for name in self.conti_embd_features.keys():
                 seq = tf.keras.Sequential([
                     tf.keras.layers.BatchNormalization(name=name + '_bn'),
-                    tf.keras.layers.Dense(**self.conti_embd_features[name], name=name + self.conti_embd_suf)
+                    tf.keras.layers.Dense(**self.conti_embd_features[name], name=name + self.conti_embd_suf,
+                                          kernel_regularizer=self.regularizer, bias_regularizer=self.regularizer)
                 ], name=name)
                 setattr(self, name + self.conti_embd_suf, seq)
 
         if self.cate_list_features:
             for name in self.cate_list_features.keys():
                 setattr(self, name + self.cate_list_embd_suf,
-                        tf.keras.layers.Embedding(**self.cate_list_features[name], name=name + self.cate_list_embd_suf))
+                        tf.keras.layers.Embedding(**self.cate_list_features[name], name=name + self.cate_list_embd_suf,
+                                                  embeddings_regularizer=self.regularizer))
 
         if self.cate_features:
             for name in self.cate_features.keys():
                 setattr(self, name + self.cate_embd_suf,
-                        tf.keras.layers.Embedding(**self.cate_features[name], name=name + self.cate_embd_suf))
+                        tf.keras.layers.Embedding(**self.cate_features[name], name=name + self.cate_embd_suf,
+                                                  embeddings_regularizer=self.regularizer))
 
         if self.cate_list_concat_way == 'fm':
             self.cate_list_concat_func = lambda x: x
