@@ -16,12 +16,12 @@ class LRRegModel(tf.keras.Model):
         self.conti_embd_features = conti_embd_features
         self.cate_features = cate_features
         self.cate_list_features = cate_list_features
-        self.cats_feature = []
+        self.all_cate_features = []
         self.regularizer = regularizer
 
         if self.cate_list_features:
             for name in self.cate_list_features.keys():
-                self.cats_feature.append(name)
+                self.all_cate_features.append(name)
                 setattr(self, name,
                         tf.keras.layers.Embedding(
                             **remove_key(self.cate_list_features[name], 'output_dim'),
@@ -30,7 +30,7 @@ class LRRegModel(tf.keras.Model):
 
         if self.cate_features:
             for name in self.cate_features.keys():
-                self.cats_feature.append(name)
+                self.all_cate_features.append(name)
                 setattr(self, name,
                         tf.keras.layers.Embedding(
                             **remove_key(self.cate_features[name], 'output_dim'),
@@ -52,11 +52,11 @@ class LRRegModel(tf.keras.Model):
         result = self.fl(
             tf.reduce_sum(
                 tf.concat(
-                    [self.__dict__[name](inputs[name]) for name in self.cats_feature],
+                    [self.__dict__[name](inputs[name]) for name in self.all_cate_features],
                     axis=1
                 )
                 , axis=1)
-        ) if self.cats_feature else 0
+        ) if self.all_cate_features else 0
 
         if self.conti_features:
             result += self.fl(
