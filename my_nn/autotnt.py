@@ -19,21 +19,25 @@ class InteractingLayer(tf.keras.layers.Layer):
 
         self.multi_head_attention = [MultiHeadAttention(self.output_dim, self.n_attention_head) for _ in
                                      range(self.n_layers)]
-        self.W_res = [tf.keras.layers.Dense(units=self.output_dim, use_bias=False,
+        self.fl = tf.keras.layers.Flatten()
+
+    def build(self, input_shape):
+        self.n_feature = input_shape[1]
+        self.W_res = [tf.keras.layers.Dense(units=self.n_feature * self.output_dim, use_bias=False,
                                             name=f'w_res_layer{l + 1}') for l in
                       range(self.n_layers)]
-        self.fl = tf.keras.layers.Flatten()
 
     def call(self, x0):
         xl = x0
         result = []
         for l in range(self.n_layers):
-            x_res = self.W_res[l](xl)
+            x_res = self.W_res[l](self.fl(xl))
             xl = self.multi_head_attention[l](xl, xl, xl, None, False)
+            x_res = tf.reshape(x_res, shape=[-1, self.n_feature, self.output_dim])
             xl = tf.nn.relu(xl + x_res)
             result.append(xl)
 
-        return self.fl(tf.concat(result, axis=1))  # ?, n_feats * output_dim * n_layers
+        return self.fl(tf.concat(result, axis=-1))  # ?, n_feats * output_dim * n_layers
 
 
 class AutoIntRegModel(BaseModel):
