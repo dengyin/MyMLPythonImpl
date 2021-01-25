@@ -32,7 +32,7 @@ class BaseModel(keras.Model):
     """
 
     def __init__(self, conti_features: dict, conti_embd_features: dict, cate_features: dict, cate_list_features: dict,
-                 cate_list_concat_way='concate', regularizer=tf.keras.regularizers.L2(0.01), **kwargs):
+                 cate_list_concat_way='concate', regularizer=None, **kwargs):
         super(BaseModel, self).__init__(**kwargs)
         self.conti_features = conti_features
         self.conti_embd_features = conti_embd_features
@@ -52,8 +52,7 @@ class BaseModel(keras.Model):
             for name in self.conti_embd_features.keys():
                 seq = tf.keras.Sequential([
                     tf.keras.layers.BatchNormalization(name=name + '_bn'),
-                    tf.keras.layers.Dense(**self.conti_embd_features[name], name=name + self.conti_embd_suf,
-                                          kernel_regularizer=self.regularizer, bias_regularizer=self.regularizer)
+                    tf.keras.layers.Dense(**self.conti_embd_features[name], name=name + self.conti_embd_suf)
                 ], name=name)
                 setattr(self, name + self.conti_embd_suf, seq)
 

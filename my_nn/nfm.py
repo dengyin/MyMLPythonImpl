@@ -11,7 +11,7 @@ class BiInteraction(BaseModel):
 
     def __init__(self, conti_embd_features: dict, cate_features: dict, cate_list_features: dict, fc_layers=(128,),
                  activation='relu', use_bn=True, use_drop_out=True,
-                 drop_p=0.5, output_dim=1, regularizer=tf.keras.regularizers.L2(0.01), **kwargs):
+                 drop_p=0.5, output_dim=1, regularizer=None, **kwargs):
         super(BiInteraction, self).__init__(None, conti_embd_features, cate_features, cate_list_features, 'fm',
                                             regularizer=regularizer, **kwargs)
 
@@ -46,7 +46,7 @@ class BiInteraction(BaseModel):
 class NFMRegModel(tf.keras.Model):
     def __init__(self, conti_features: dict, conti_embd_features: dict, cate_features: dict, cate_list_features: dict,
                  fc_layers=(128,), activation='relu', use_bn=True, use_drop_out=True, drop_p=0.5, output_dim=1,
-                 regularizer=tf.keras.regularizers.L2(0.01), **kwargs):
+                 regularizer=None, **kwargs):
         super(NFMRegModel, self).__init__(**kwargs)
 
         self.output_dim = output_dim
@@ -72,7 +72,7 @@ class NFMRegModel(tf.keras.Model):
 class NFMClfModel(NFMRegModel):
     def __init__(self, conti_features: dict, conti_embd_features: dict, cate_features: dict, cate_list_features: dict,
                  fc_layers=(128,), activation='relu', use_bn=True, use_drop_out=True, drop_p=0.5, output_dim=1,
-                 regularizer=tf.keras.regularizers.L2(0.01), **kwargs):
+                 regularizer=None, **kwargs):
         super(NFMClfModel, self).__init__(conti_features, conti_embd_features, cate_features, cate_list_features,
                                           fc_layers, activation, use_bn, use_drop_out, drop_p,
                                           output_dim, regularizer=regularizer, **kwargs)

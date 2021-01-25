@@ -9,7 +9,7 @@ from my_nn.base import BaseModel
 
 class InteractingLayer(tf.keras.layers.Layer):
 
-    def __init__(self, output_dim: int, n_attention_head=2, n_layers=1, regularizer=tf.keras.regularizers.L2(0.01)):
+    def __init__(self, output_dim: int, n_attention_head=2, n_layers=1, regularizer=None):
         super(InteractingLayer, self).__init__()
         self.output_dim = output_dim
         self.n_attention_head = n_attention_head
@@ -46,7 +46,7 @@ class AutoIntRegModel(BaseModel):
     def __init__(self, conti_embd_features: dict, cate_features: dict, cate_list_features: dict, output_dim=1,
                  interacting_output_dim=6, n_attention_head=2, interacting_n_layers=1,
                  fc_layers=(128,), activation='relu', use_bn=True, use_drop_out=True,
-                 drop_p=0.5, cate_list_concat_way='mean', regularizer=tf.keras.regularizers.L2(0.01), **kwargs):
+                 drop_p=0.5, cate_list_concat_way='mean', regularizer=None, **kwargs):
         super(AutoIntRegModel, self).__init__(None, conti_embd_features, cate_features, cate_list_features,
                                               cate_list_concat_way, regularizer=regularizer, **kwargs)
 
@@ -102,7 +102,7 @@ class AutoIntClfModel(AutoIntRegModel):
     def __init__(self, conti_embd_features: dict, cate_features: dict, cate_list_features: dict, output_dim=1,
                  interacting_output_dim=6, n_attention_head=2, interacting_n_layers=1,
                  fc_layers=(128,), activation='relu', use_bn=True, use_drop_out=True, drop_p=0.5,
-                 cate_list_concat_way='mean', regularizer=tf.keras.regularizers.L2(0.01), **kwargs):
+                 cate_list_concat_way='mean', regularizer=None, **kwargs):
         super(AutoIntClfModel, self).__init__(conti_embd_features, cate_features, cate_list_features, output_dim,
                                               interacting_output_dim, n_attention_head,
                                               interacting_n_layers, fc_layers, activation, use_bn, use_drop_out,

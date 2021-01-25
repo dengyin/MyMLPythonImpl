@@ -7,7 +7,7 @@ from my_nn.base import BaseModel
 class Dnn(BaseModel):
     def __init__(self, conti_features: dict, conti_embd_features: dict, cate_features: dict, cate_list_features: dict,
                  cate_list_concat_way='mean', fc_layers=(128,), activation='relu', use_bn=True, use_drop_out=True,
-                 drop_p=0.5, regularizer=tf.keras.regularizers.L2(0.01), **kwargs):
+                 drop_p=0.5, regularizer=None, **kwargs):
         super(Dnn, self).__init__(conti_features, conti_embd_features, cate_features, cate_list_features,
                                   cate_list_concat_way, regularizer, **kwargs)
 
@@ -49,7 +49,7 @@ class Dnn(BaseModel):
 class DnnClfModel(Dnn):
     def __init__(self, conti_features: dict, conti_embd_features: dict, cate_features: dict, cate_list_features: dict,
                  cate_list_concat_way='mean', fc_layers=(128,), activation='relu', use_bn=True, use_drop_out=True,
-                 drop_p=0.5, n_class=2, regularizer=tf.keras.regularizers.L2(0.01), **kwargs):
+                 drop_p=0.5, n_class=2, regularizer=None, **kwargs):
         super(DnnClfModel, self).__init__(conti_features, conti_embd_features, cate_features, cate_list_features,
                                           cate_list_concat_way, fc_layers, activation, use_bn, use_drop_out,
                                           drop_p, regularizer, **kwargs)
@@ -66,7 +66,7 @@ class DnnClfModel(Dnn):
 class DnnRegModel(Dnn):
     def __init__(self, conti_features: dict, conti_embd_features: dict, cate_features: dict, cate_list_features: dict,
                  cate_list_concat_way='mean', fc_layers=(128,), activation='relu', use_bn=True, use_drop_out=True,
-                 drop_p=0.5, regularizer=tf.keras.regularizers.L2(0.01), **kwargs):
+                 drop_p=0.5, regularizer=None, **kwargs):
         super(DnnRegModel, self).__init__(conti_features, conti_embd_features, cate_features, cate_list_features,
                                           cate_list_concat_way, fc_layers, activation, use_bn, use_drop_out,
                                           drop_p, regularizer=regularizer, **kwargs)

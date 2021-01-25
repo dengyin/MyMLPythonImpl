@@ -2,7 +2,7 @@ import tensorflow as tf
 
 
 class MultiHeadAttention(tf.keras.layers.Layer):
-    def __init__(self, output_dim, num_heads, regularizer=tf.keras.regularizers.L2(0.01)):
+    def __init__(self, output_dim, num_heads, regularizer=None):
         super(MultiHeadAttention, self).__init__()
         self.num_heads = num_heads
         self.output_dim = output_dim

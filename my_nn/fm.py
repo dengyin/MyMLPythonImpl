@@ -10,7 +10,7 @@ from my_nn.base import BaseModel
 class FMLayer(BaseModel):
 
     def __init__(self, conti_embd_features: dict, cate_features: dict, cate_list_features: dict,
-                 regularizer=tf.keras.regularizers.L2(0.01), **kwargs):
+                 regularizer=None, **kwargs):
         super(FMLayer, self).__init__(None, conti_embd_features, cate_features, cate_list_features, 'fm', regularizer,
                                       **kwargs)
         self.fl = tf.keras.layers.Flatten()
@@ -25,7 +25,7 @@ class FMLayer(BaseModel):
 
 class FMRegModel(tf.keras.Model):
     def __init__(self, conti_features: dict, conti_embd_features: dict, cate_features: dict, cate_list_features: dict,
-                 regularizer=tf.keras.regularizers.L2(0.01), **kwargs):
+                 regularizer=None, **kwargs):
         super(FMRegModel, self).__init__(**kwargs)
 
         self.conti_features = conti_features
@@ -46,7 +46,7 @@ class FMRegModel(tf.keras.Model):
 
 class FMClfModel(FMRegModel):
     def __init__(self, conti_features: dict, conti_embd_features: dict, cate_features: dict, cate_list_features: dict,
-                 regularizer=tf.keras.regularizers.L2(0.01), **kwargs):
+                 regularizer=None, **kwargs):
         super(FMClfModel, self).__init__(conti_features, conti_embd_features, cate_features, cate_list_features,
                                          regularizer=regularizer, **kwargs)
 

@@ -8,7 +8,7 @@ from my_nn.base import BaseModel
 
 class LRRegModel(tf.keras.Model):
     def __init__(self, conti_features: dict, conti_embd_features: dict, cate_features: dict, cate_list_features: dict,
-                 output_dim=1, regularizer=tf.keras.regularizers.L2(0.01), **kwargs):
+                 output_dim=1, regularizer=None, **kwargs):
         super(LRRegModel, self).__init__(**kwargs)
 
         self.output_dim = output_dim
