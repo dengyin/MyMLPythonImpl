@@ -1,3 +1,5 @@
+from copy import copy
+
 import tensorflow as tf
 from tensorflow import keras
 
@@ -19,7 +21,7 @@ class BaseModel(keras.Model):
         'feature_name':
             {
                 'units': 16,
-                use_bias: False
+                'use_bias': False
             }
         , ....
     }
@@ -146,3 +148,110 @@ class BaseModel(keras.Model):
             return result, input_shape
         else:
             return result
+
+
+class BaseSeqModel(keras.Model):
+    """
+    cate_list_features = { embdding parameter
+        'feature_name':
+            {
+                'input_dim': len(vocabulary) + 1,
+                'output_dim': 16,
+                'mask_zero': True,
+                'input_length': 20
+            }
+        , .....
+    }
+
+    conti_embd_list_features = { dense parameter
+        'feature_name':
+            {
+                'units': 16,
+                'use_bias': False,
+                'input_length': 20
+            }
+        , ....
+    }
+
+
+    """
+
+    def __init__(self, conti_list_embd_features: dict, cate_list_features: dict, **kwargs):
+        super(BaseSeqModel, self).__init__(**kwargs)
+        self.conti_list_embd_features = conti_list_embd_features
+        self.cate_list_features = cate_list_features
+
+        self.conti_list_embd_suf = '_conti_list_embd'
+        self.cate_list_embd_suf = '_cate_list_embd'
+
+        if self.conti_list_embd_features:
+            for name in self.conti_list_embd_features.keys():
+                seq = tf.keras.Sequential([
+                    tf.keras.layers.Reshape([self.conti_list_embd_features[name].get('input_length'), 1]),
+                    tf.keras.layers.BatchNormalization(name=name + '_bn'),
+                    tf.keras.layers.Dense(**remove_key(self.conti_list_embd_features[name], 'input_length'),
+                                          name=name + self.conti_list_embd_suf)
+                ], name=name)
+                setattr(self, name + self.conti_list_embd_suf, seq)
+
+        if self.cate_list_features:
+            for name in self.cate_list_features.keys():
+                setattr(self, name + self.cate_list_embd_suf,
+                        tf.keras.layers.Embedding(**self.cate_list_features[name], name=name + self.cate_list_embd_suf))
+
+    def call(self, inputs: dict, **kwargs):
+        result = []
+        if self.cate_list_features:
+            result += [self.__dict__[name](inputs[name[:-len(self.cate_list_embd_suf)]])
+                       for name in self.__dict__.keys() if
+                       name.endswith(self.cate_list_embd_suf)]  # batch_size * input_length * (embd_size * n)
+
+        if self.conti_list_embd_features:
+            result += [tf.reshape(self.__dict__[name](inputs[name[:-len(self.conti_list_embd_suf)]]),
+                                  shape=[-1,
+                                         self.conti_list_embd_features.get(name[:-len(self.conti_list_embd_suf)]).get(
+                                             'input_length'),
+                                         self.conti_list_embd_features.get(name[:-len(self.conti_list_embd_suf)]).get(
+                                             'units'),
+                                         ])
+                       for name in self.__dict__.keys() if
+                       name.endswith(self.conti_list_embd_suf)]  # batch_size * input_length * (units * n)
+
+        if len(result) > 1:
+            return tf.concat(result, axis=-1)
+        else:
+            return result[0]
+
+    def create_input(self, data, return_input_shape=False):
+        result = {}
+        input_shape = {}
+        if self.conti_list_embd_features:
+            for name in self.conti_list_embd_features.keys():
+                result[name] = tf.convert_to_tensor(tf.keras.preprocessing.sequence.pad_sequences(
+                    data[name].apply(lambda x: [a for a in x if isinstance(a, float)]),
+                    maxlen=self.conti_list_embd_features[name]['input_length'],
+                    dtype='float32',
+                    padding='pre',
+                    truncating='pre', value=0.0
+                ))
+                input_shape[name] = (None, self.conti_list_embd_features[name]['input_length'])
+        if self.cate_list_features:
+            for name in self.cate_list_features.keys():
+                result[name] = tf.convert_to_tensor(tf.keras.preprocessing.sequence.pad_sequences(
+                    data[name].apply(lambda x: [a for a in x if isinstance(a, int)]),
+                    maxlen=self.cate_list_features[name]['input_length'],
+                    dtype='int32',
+                    padding='pre',
+                    truncating='pre', value=0.0
+                ))
+                input_shape[name] = (None, self.cate_list_features[name]['input_length'])
+        if return_input_shape:
+            return result, input_shape
+        else:
+            return result
+
+
+def remove_key(d: dict, key):
+    r = copy(d)
+    del r[key]
+    return r

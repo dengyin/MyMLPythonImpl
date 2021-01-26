@@ -1,4 +1,4 @@
-from .base import BaseModel
+from .base import BaseModel, BaseSeqModel
 from .lr import LRRegModel, LRClfModel
 from .fm import FMClfModel, FMRegModel
 from .dnn import DnnClfModel, DnnRegModel
@@ -8,6 +8,7 @@ from .autotnt import AutoIntRegModel, AutoIntClfModel
 
 __all__ = [
     'BaseModel',
+    'BaseSeqModel',
     'LRRegModel',
     'LRClfModel',
     'FMClfModel',
