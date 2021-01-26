@@ -4,7 +4,7 @@ import tensorflow as tf
 from tensorflow import keras
 
 from my_nn.attention import MultiHeadAttention
-from my_nn.base import BaseModel
+from my_nn.base import BaseModel, BaseSeqModel
 
 
 class InteractingLayer(tf.keras.layers.Layer):
@@ -111,6 +111,85 @@ class AutoIntClfModel(AutoIntRegModel):
 
     def call(self, inputs: dict):
         return self.output_func(super(AutoIntClfModel, self).call(inputs))
+
+
+class AutoIntSeqRegModel(BaseModel):
+    def __init__(self, conti_embd_features: dict, cate_features: dict, cate_list_features: dict,
+                 conti_list_embd_features: dict, output_dim=1,
+                 interacting_output_dim=6, n_attention_head=2, interacting_n_layers=1,
+                 fc_layers=(128,), activation='relu', use_bn=True, use_drop_out=True,
+                 drop_p=0.5, regularizer=None, **kwargs):
+        super(AutoIntSeqRegModel, self).__init__(None, conti_embd_features, cate_features, None,
+                                                 'fm', regularizer=regularizer, **kwargs)
+
+        self.output_dim = output_dim
+        self.interacting_output_dim = interacting_output_dim
+        self.n_attention_head = n_attention_head
+        self.interacting_n_layers = interacting_n_layers
+        self.features = {}
+        if self.conti_embd_features:
+            self.features.update(self.conti_embd_features)
+        if self.cate_features:
+            self.features.update(self.cate_features)
+        if self.cate_list_features:
+            self.features.update(self.cate_list_features)
+
+        self.InteractingLayer = InteractingLayer(self.interacting_output_dim, self.n_attention_head,
+                                                 self.interacting_n_layers, regularizer=self.regularizer)
+        self.layer_list = [keras.layers.BatchNormalization()] if use_bn else []
+
+        for h, units in enumerate(fc_layers):
+            self.layer_list.append(
+                tf.keras.layers.Dense(units=units, name=f'dense_h{h + 1}', kernel_regularizer=self.regularizer,
+                                      bias_regularizer=self.regularizer))
+            if use_bn:
+                self.layer_list.append(keras.layers.BatchNormalization(name=f'bn_h{h + 1}'))
+            self.layer_list.append(keras.layers.Activation(activation, name=f'acti_h{h + 1}'))
+            if use_drop_out:
+                self.layer_list.append(keras.layers.Dropout(drop_p, seed=42, name=f'dropout_h{h + 1}'))
+
+        self.embd_dim = 0
+        for key in self.features.keys():
+            self.embd_dim = self.features.get(key).get('output_dim') if self.features.get(key).get(
+                'output_dim') else 0
+            self.embd_dim = self.features.get(key).get('units') if self.features.get(key).get(
+                'units') else self.embd_dim
+            if self.embd_dim > 0:
+                break
+
+        self.seqModel = BaseSeqModel(conti_list_embd_features, cate_list_features)
+        self.SeqInteractingLayer = InteractingLayer(self.embd_dim, 1, 1, regularizer=self.regularizer)
+        self.SeqInteractingLayerReshape = tf.keras.layers.Reshape((-1, self.embd_dim))
+
+        self.output_layer = tf.keras.layers.Dense(units=self.output_dim)
+
+    def call(self, inputs: dict):
+        embd_vecs = super(AutoIntSeqRegModel, self).call(inputs)
+        seq_embd_vecs = self.seqModel(inputs)
+        seq_embd_vecs = self.SeqInteractingLayerReshape(self.SeqInteractingLayer(seq_embd_vecs))
+        seq_embd_vecs = tf.reduce_mean(seq_embd_vecs, axis=1, keepdims=True)
+        result = tf.concat([embd_vecs, seq_embd_vecs], axis=1)
+        result = self.InteractingLayer(result)
+        for layer in self.layer_list:
+            result = layer(result)
+        return self.output_layer(result)
+
+
+class AutoIntSeqClfModel(AutoIntSeqRegModel):
+    def __init__(self, conti_embd_features: dict, cate_features: dict, cate_list_features: dict,
+                 conti_list_embd_features: dict, output_dim=1,
+                 interacting_output_dim=6, n_attention_head=2, interacting_n_layers=1,
+                 fc_layers=(128,), activation='relu', use_bn=True, use_drop_out=True,
+                 drop_p=0.5, regularizer=None, **kwargs):
+        super(AutoIntSeqClfModel, self).__init__(conti_embd_features, cate_features, cate_list_features,
+                                              conti_list_embd_features, output_dim,
+                                              interacting_output_dim, n_attention_head, interacting_n_layers,
+                                              fc_layers, activation, use_bn, use_drop_out,
+                                              drop_p, regularizer, **kwargs)
+        self.output_func = tf.nn.softmax if self.output_dim >= 2 else tf.nn.sigmoid
+
+    def call(self, inputs: dict):
+        return self.output_func(super(AutoIntSeqClfModel, self).call(inputs))
 
 
 def remove_key(d: dict, key):
