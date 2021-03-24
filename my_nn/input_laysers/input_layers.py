@@ -101,7 +101,7 @@ class InputLayer(keras.Model):
     """
 
     def __init__(self, conti_features: dict, conti_embd_features: dict, cate_features: dict, cate_seq_features: dict,
-                 conti_embd_seq_features: dict, seq_features_concat_way='concate', **kwargs):
+                 conti_embd_seq_features: dict, seq_features_concat_way='flatten', **kwargs):
         super(InputLayer, self).__init__(**kwargs)
 
         self.conti_features = conti_features
@@ -113,8 +113,9 @@ class InputLayer(keras.Model):
         self.input_layers = {}
         self.seq_input_layers = {}
 
-        if self.seq_features_concat_way == 'fm':
-            assert self.conti_features is None, 'FM layer 不允许输入连续变量'
+        if self.seq_features_concat_way == 'stack':
+            assert self.conti_features is None, 'stack way 不允许输入连续变量'
+        assert self.seq_features_concat_way in ['stack', 'flatten', 'mean', 'sum']
 
         if conti_features:
             for k in conti_features.keys():
@@ -138,9 +139,9 @@ class InputLayer(keras.Model):
                 self.seq_input_layers[k] = CateSeqFeaLayer(k, cate_seq_features.get(k))
 
         if self.cate_seq_features or self.conti_embd_seq_features:
-            if self.seq_features_concat_way == 'fm':
+            if self.seq_features_concat_way == 'stack':
                 self.seq_fea_concat_func = lambda x: x
-            elif self.seq_features_concat_way == 'concate':
+            elif self.seq_features_concat_way == 'flatten':
                 self.seq_fea_concat_func = keras.layers.Flatten()
             elif self.seq_features_concat_way == 'mean':
                 self.seq_fea_concat_func = lambda x: tf.reduce_mean(x, axis=1)
@@ -158,7 +159,7 @@ class InputLayer(keras.Model):
         result = []
 
         if outputs:
-            if self.seq_features_concat_way == 'fm':
+            if self.seq_features_concat_way == 'stack':
                 outputs = tf.stack(outputs, axis=1)  # batch * n_feature * dim
             else:
                 outputs = tf.concat(outputs, axis=-1)  # batch * (n_feature * dim)
