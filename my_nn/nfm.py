@@ -1,19 +1,19 @@
-from copy import copy
-
 import tensorflow as tf
 from tensorflow import keras
 
 from my_nn import LRRegModel
-from my_nn.base import BaseModel
+from my_nn.input_laysers import InputLayer
 
 
-class BiInteraction(BaseModel):
+class BiInteraction(InputLayer):
 
-    def __init__(self, conti_embd_features: dict, cate_features: dict, cate_list_features: dict, fc_layers=(128,),
+    def __init__(self, conti_embd_features: dict, cate_features: dict, cate_seq_features: dict,
+                 conti_embd_seq_features: dict, fc_layers=(128,),
                  activation='relu', use_bn=True, use_drop_out=True,
                  drop_p=0.5, output_dim=1, regularizer=None, **kwargs):
-        super(BiInteraction, self).__init__(None, conti_embd_features, cate_features, cate_list_features, 'fm',
-                                            regularizer=regularizer, **kwargs)
+        super(BiInteraction, self).__init__(None, conti_embd_features, cate_features, cate_seq_features,
+                                            conti_embd_seq_features, 'stack', **kwargs)
+        self.regularizer = regularizer
 
         self.output_dim = output_dim
         self.layer_list = [keras.layers.BatchNormalization()] if use_bn else []
@@ -44,23 +44,24 @@ class BiInteraction(BaseModel):
 
 
 class NFMRegModel(tf.keras.Model):
-    def __init__(self, conti_features: dict, conti_embd_features: dict, cate_features: dict, cate_list_features: dict,
-                 fc_layers=(128,), activation='relu', use_bn=True, use_drop_out=True, drop_p=0.5, output_dim=1,
-                 regularizer=None, **kwargs):
+    def __init__(self, conti_features: dict, conti_embd_features: dict, cate_features: dict, cate_seq_features: dict,
+                 conti_embd_seq_features: dict, fc_layers=(128,), activation='relu', use_bn=True, use_drop_out=True,
+                 drop_p=0.5, output_dim=1, regularizer=None, **kwargs):
         super(NFMRegModel, self).__init__(**kwargs)
 
         self.output_dim = output_dim
         self.conti_features = conti_features
         self.conti_embd_features = conti_embd_features
         self.cate_features = cate_features
-        self.cate_list_features = cate_list_features
+        self.cate_seq_features = cate_seq_features
+        self.conti_embd_seq_features = conti_embd_seq_features
         self.regularizer = regularizer
 
-        self.bi_interaction = BiInteraction(self.conti_embd_features, self.cate_features, self.cate_list_features,
-                                            fc_layers, activation, use_bn, use_drop_out, drop_p, output_dim,
-                                            regularizer=regularizer)
+        self.bi_interaction = BiInteraction(self.conti_embd_features, self.cate_features, self.cate_seq_features,
+                                            self.conti_embd_seq_features, fc_layers, activation, use_bn, use_drop_out,
+                                            drop_p, output_dim, regularizer=regularizer)
 
-        self.lr = LRRegModel(self.conti_features, self.conti_embd_features, self.cate_features, self.cate_list_features,
+        self.lr = LRRegModel(self.conti_features, self.conti_embd_features, self.cate_features, self.cate_seq_features,
                              self.output_dim, regularizer=regularizer)
 
     def call(self, inputs: dict):
@@ -70,19 +71,14 @@ class NFMRegModel(tf.keras.Model):
 
 
 class NFMClfModel(NFMRegModel):
-    def __init__(self, conti_features: dict, conti_embd_features: dict, cate_features: dict, cate_list_features: dict,
-                 fc_layers=(128,), activation='relu', use_bn=True, use_drop_out=True, drop_p=0.5, output_dim=1,
-                 regularizer=None, **kwargs):
-        super(NFMClfModel, self).__init__(conti_features, conti_embd_features, cate_features, cate_list_features,
-                                          fc_layers, activation, use_bn, use_drop_out, drop_p,
-                                          output_dim, regularizer=regularizer, **kwargs)
+    def __init__(self, conti_features: dict, conti_embd_features: dict, cate_features: dict, cate_seq_features: dict,
+                 conti_embd_seq_features: dict, fc_layers=(128,), activation='relu', use_bn=True, use_drop_out=True,
+                 drop_p=0.5, output_dim=1, regularizer=None, **kwargs):
+        super(NFMClfModel, self).__init__(conti_features, conti_embd_features, cate_features, cate_seq_features,
+                                          conti_embd_seq_features, fc_layers, activation, use_bn, use_drop_out,
+                                          drop_p, output_dim, regularizer, **kwargs)
         self.output_func = tf.nn.softmax if self.output_dim >= 2 else tf.nn.sigmoid
 
     def call(self, inputs: dict):
         return self.output_func(super(NFMClfModel, self).call(inputs))
 
-
-def remove_key(d: dict, key):
-    r = copy(d)
-    del r[key]
-    return r

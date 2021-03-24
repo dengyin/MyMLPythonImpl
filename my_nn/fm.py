@@ -1,18 +1,15 @@
-from copy import copy
-
 import tensorflow as tf
-from tensorflow import keras
 
 from my_nn import LRRegModel
-from my_nn.base import BaseModel
+from my_nn.input_laysers import InputLayer
 
 
-class FMLayer(BaseModel):
+class FMLayer(InputLayer):
 
-    def __init__(self, conti_embd_features: dict, cate_features: dict, cate_list_features: dict,
-                 regularizer=None, **kwargs):
-        super(FMLayer, self).__init__(None, conti_embd_features, cate_features, cate_list_features, 'fm', regularizer,
-                                      **kwargs)
+    def __init__(self, conti_embd_features: dict, cate_features: dict, cate_seq_features: dict,
+                 conti_embd_seq_features: dict, **kwargs):
+        super(FMLayer, self).__init__(None, conti_embd_features, cate_features, cate_seq_features,
+                                      conti_embd_seq_features, 'stack', **kwargs)
         self.fl = tf.keras.layers.Flatten()
 
     def call(self, inputs: dict, **kwargs):
@@ -24,18 +21,20 @@ class FMLayer(BaseModel):
 
 
 class FMRegModel(tf.keras.Model):
-    def __init__(self, conti_features: dict, conti_embd_features: dict, cate_features: dict, cate_list_features: dict,
-                 regularizer=None, **kwargs):
+    def __init__(self, conti_features: dict, conti_embd_features: dict, cate_features: dict, cate_seq_features: dict,
+                 conti_embd_seq_features: dict, regularizer=None, **kwargs):
         super(FMRegModel, self).__init__(**kwargs)
 
         self.conti_features = conti_features
         self.conti_embd_features = conti_embd_features
         self.cate_features = cate_features
-        self.cate_list_features = cate_list_features
+        self.cate_seq_features = cate_seq_features
+        self.conti_embd_seq_features = conti_embd_seq_features
         self.regularizer = regularizer
 
-        self.fm_layer = FMLayer(self.conti_embd_features, self.cate_features, self.cate_list_features, self.regularizer)
-        self.lr = LRRegModel(self.conti_features, self.conti_embd_features, self.cate_features, self.cate_list_features,
+        self.fm_layer = FMLayer(self.conti_embd_features, self.cate_features, self.cate_seq_features,
+                                self.conti_embd_seq_features)
+        self.lr = LRRegModel(self.conti_features, self.conti_embd_features, self.cate_features, self.cate_seq_features,
                              1, regularizer=self.regularizer)
 
     def call(self, inputs: dict):
@@ -45,16 +44,10 @@ class FMRegModel(tf.keras.Model):
 
 
 class FMClfModel(FMRegModel):
-    def __init__(self, conti_features: dict, conti_embd_features: dict, cate_features: dict, cate_list_features: dict,
-                 regularizer=None, **kwargs):
-        super(FMClfModel, self).__init__(conti_features, conti_embd_features, cate_features, cate_list_features,
-                                         regularizer=regularizer, **kwargs)
+    def __init__(self, conti_features: dict, conti_embd_features: dict, cate_features: dict, cate_seq_features: dict,
+                 conti_embd_seq_features: dict, regularizer=None, **kwargs):
+        super(FMClfModel, self).__init__(conti_features, conti_embd_features, cate_features, cate_seq_features,
+                                         conti_embd_seq_features, regularizer, **kwargs)
 
     def call(self, inputs: dict):
         return tf.nn.sigmoid(super(FMClfModel, self).call(inputs))
-
-
-def remove_key(d: dict, key):
-    r = copy(d)
-    del r[key]
-    return r

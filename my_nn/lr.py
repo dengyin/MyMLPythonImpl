@@ -3,8 +3,6 @@ from copy import copy
 import tensorflow as tf
 from tensorflow import keras
 
-from my_nn.base import BaseModel
-
 
 class LRRegModel(tf.keras.Model):
     def __init__(self, conti_features: dict, conti_embd_features: dict, cate_features: dict, cate_list_features: dict,

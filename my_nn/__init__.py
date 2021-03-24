@@ -1,14 +1,11 @@
-from .base import BaseModel, BaseSeqModel
 from .lr import LRRegModel, LRClfModel
 from .fm import FMClfModel, FMRegModel
 from .dnn import DnnClfModel, DnnRegModel
 from .deepfm import DeepFmClfModel, DeepFmRegModel
 from .nfm import NFMRegModel, NFMClfModel
-from .autotnt import AutoIntRegModel, AutoIntClfModel, AutoIntSeqClfModel, AutoIntSeqRegModel
+from .autotnt import AutoIntRegModel, AutoIntClfModel
 
 __all__ = [
-    'BaseModel',
-    'BaseSeqModel',
     'LRRegModel',
     'LRClfModel',
     'FMClfModel',
@@ -20,7 +17,5 @@ __all__ = [
     'NFMRegModel',
     'NFMClfModel',
     'AutoIntRegModel',
-    'AutoIntClfModel',
-    'AutoIntSeqClfModel',
-    'AutoIntSeqRegModel'
+    'AutoIntClfModel'
 ]
