@@ -61,8 +61,12 @@ class NFMRegModel(tf.keras.Model):
                                             self.conti_embd_seq_features, fc_layers, activation, use_bn, use_drop_out,
                                             drop_p, output_dim, regularizer=regularizer)
 
-        self.lr = LRRegModel(self.conti_features, self.conti_embd_features, self.cate_features, self.cate_seq_features,
-                             self.output_dim, regularizer=regularizer)
+        conti_features_ = {}
+        if self.conti_features:
+            conti_features_.update(self.conti_features)
+        if self.conti_embd_features:
+            conti_features_.update(self.conti_embd_features)
+        self.lr = LRRegModel(conti_features_, self.cate_features, 1, regularizer=self.regularizer)
 
     def call(self, inputs: dict):
         first_order = self.lr(inputs)

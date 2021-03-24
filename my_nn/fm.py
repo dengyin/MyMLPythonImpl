@@ -34,8 +34,13 @@ class FMRegModel(tf.keras.Model):
 
         self.fm_layer = FMLayer(self.conti_embd_features, self.cate_features, self.cate_seq_features,
                                 self.conti_embd_seq_features)
-        self.lr = LRRegModel(self.conti_features, self.conti_embd_features, self.cate_features, self.cate_seq_features,
-                             1, regularizer=self.regularizer)
+
+        conti_features_ = {}
+        if self.conti_features:
+            conti_features_.update(self.conti_features)
+        if self.conti_embd_features:
+            conti_features_.update(self.conti_embd_features)
+        self.lr = LRRegModel(conti_features_, self.cate_features, 1, regularizer=self.regularizer)
 
     def call(self, inputs: dict):
         first_order = self.lr(inputs)
