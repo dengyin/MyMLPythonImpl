@@ -1,7 +1,7 @@
 import tensorflow as tf
 from tensorflow import keras
 
-from my_nn import LRRegModel
+from .lr import LRRegModel
 from my_nn.input_laysers import InputLayer
 
 

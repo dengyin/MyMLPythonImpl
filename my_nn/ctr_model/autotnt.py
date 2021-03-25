@@ -1,7 +1,7 @@
 import tensorflow as tf
 from tensorflow import keras
 
-from my_nn.attention import MultiHeadAttention
+from my_nn.Transformer import MultiHeadAttention
 from my_nn.input_laysers import InputLayer
 
 

@@ -1,7 +1,8 @@
 import tensorflow as tf
 from tensorflow import keras
 
-from my_nn import FMRegModel, DnnRegModel
+from .fm import FMRegModel
+from .dnn import DnnRegModel
 
 
 class DeepFmRegModel(keras.Model):

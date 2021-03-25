@@ -1,6 +1,6 @@
 import tensorflow as tf
 
-from my_nn import LRRegModel
+from .lr import LRRegModel
 from my_nn.input_laysers import InputLayer
 
 
