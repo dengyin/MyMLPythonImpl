@@ -2,6 +2,7 @@ import tensorflow as tf
 from tensorflow import keras
 
 from my_nn.Transformer import MultiHeadAttention
+from my_nn.ctr_model.com import fc_build
 from my_nn.input_laysers import InputLayer
 
 
@@ -71,17 +72,7 @@ class AutoIntRegModel(InputLayer):
 
         self.InteractingLayer = InteractingLayer(self.interacting_output_dim, self.n_attention_head,
                                                  self.interacting_n_layers, regularizer=self.regularizer)
-        self.layer_list = [keras.layers.BatchNormalization()] if use_bn else []
-
-        for h, units in enumerate(fc_layers):
-            self.layer_list.append(
-                tf.keras.layers.Dense(units=units, name=f'dense_h{h + 1}', kernel_regularizer=self.regularizer,
-                                      bias_regularizer=self.regularizer))
-            if use_bn:
-                self.layer_list.append(keras.layers.BatchNormalization(name=f'bn_h{h + 1}'))
-            self.layer_list.append(keras.layers.Activation(activation, name=f'acti_h{h + 1}'))
-            if use_drop_out:
-                self.layer_list.append(keras.layers.Dropout(drop_p, seed=42, name=f'dropout_h{h + 1}'))
+        self.layer_list = fc_build(use_bn, fc_layers, drop_p, use_drop_out, activation, regularizer)
 
         self.embd_dim = 0
         for key in self.features.keys():
