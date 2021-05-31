@@ -1,3 +1,5 @@
+from copy import copy
+
 import tensorflow as tf
 from tensorflow import keras
 
@@ -15,3 +17,8 @@ def fc_build(use_bn, fc_layers, drop_p, use_drop_out, activation, regularizer):
             layer_list.append(keras.layers.Dropout(drop_p, seed=42, name=f'dropout_h{h + 1}'))
 
     return layer_list
+
+def remove_key(d: dict, key):
+    r = copy(d)
+    del r[key]
+    return r

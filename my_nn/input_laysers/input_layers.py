@@ -101,7 +101,7 @@ class InputLayer(keras.Model):
     """
 
     def __init__(self, conti_features: dict, conti_embd_features: dict, cate_features: dict, cate_seq_features: dict,
-                 conti_embd_seq_features: dict, seq_features_concat_way='flatten', **kwargs):
+                 conti_embd_seq_features: dict, **kwargs):
         super(InputLayer, self).__init__(**kwargs)
 
         self.conti_features = conti_features
@@ -109,13 +109,8 @@ class InputLayer(keras.Model):
         self.cate_features = cate_features
         self.cate_seq_features = cate_seq_features
         self.conti_embd_seq_features = conti_embd_seq_features
-        self.seq_features_concat_way = seq_features_concat_way
         self.input_layers = {}
         self.seq_input_layers = {}
-
-        if self.seq_features_concat_way == 'stack':
-            assert self.conti_features is None, 'stack way 不允许输入连续变量'
-        assert self.seq_features_concat_way in ['stack', 'flatten', 'mean', 'sum']
 
         if conti_features:
             for k in conti_features.keys():
@@ -138,17 +133,21 @@ class InputLayer(keras.Model):
             for k in cate_seq_features.keys():
                 self.seq_input_layers[k] = CateSeqFeaLayer(k, cate_seq_features.get(k))
 
-        if self.cate_seq_features or self.conti_embd_seq_features:
-            if self.seq_features_concat_way == 'stack':
-                self.seq_fea_concat_func = lambda x: x
-            elif self.seq_features_concat_way == 'flatten':
-                self.seq_fea_concat_func = keras.layers.Flatten()
-            elif self.seq_features_concat_way == 'mean':
-                self.seq_fea_concat_func = lambda x: tf.reduce_mean(x, axis=1)
-            elif self.seq_features_concat_way == 'sum':
-                self.seq_fea_concat_func = lambda x: tf.reduce_sum(x, axis=1)
+    def call(self, input, seq_features_concat_way):
+        if seq_features_concat_way == 'stack':
+            assert self.conti_features is None, 'stack way 不允许输入连续变量'
+        assert seq_features_concat_way in ['stack', 'flatten', 'mean', 'sum']
 
-    def call(self, input):
+        if self.cate_seq_features or self.conti_embd_seq_features:
+            if seq_features_concat_way == 'stack':
+                seq_fea_concat_func = lambda x: x
+            elif seq_features_concat_way == 'flatten':
+                seq_fea_concat_func = keras.layers.Flatten()
+            elif seq_features_concat_way == 'mean':
+                seq_fea_concat_func = lambda x: tf.reduce_mean(x, axis=1)
+            elif seq_features_concat_way == 'sum':
+                seq_fea_concat_func = lambda x: tf.reduce_sum(x, axis=1)
+
         outputs = []
         for k in self.input_layers.keys():
             outputs.append(self.input_layers.get(k)(input.get(k)))
@@ -159,7 +158,7 @@ class InputLayer(keras.Model):
         result = []
 
         if outputs:
-            if self.seq_features_concat_way == 'stack':
+            if seq_features_concat_way == 'stack':
                 outputs = tf.stack(outputs, axis=1)  # batch * n_feature * dim
             else:
                 outputs = tf.concat(outputs, axis=-1)  # batch * (n_feature * dim)
@@ -167,7 +166,7 @@ class InputLayer(keras.Model):
 
         if seq_outputs:
             seq_outputs = tf.concat(seq_outputs, axis=-1)  # batch * length * dim
-            seq_outputs = self.seq_fea_concat_func(seq_outputs)
+            seq_outputs = seq_fea_concat_func(seq_outputs)
             result.append(seq_outputs)
 
         if len(result) > 1:

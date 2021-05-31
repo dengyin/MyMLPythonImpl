@@ -41,13 +41,13 @@ class InteractingLayer(tf.keras.layers.Layer):
         return self.fl(tf.concat(result, axis=-1))  # ?, n_feats * output_dim * n_layers
 
 
-class AutoIntRegModel(InputLayer):
-    def __init__(self, conti_embd_features: dict, cate_features: dict, cate_seq_features: dict,
-                 conti_embd_seq_features: dict, output_dim=1, interacting_output_dim=6, n_attention_head=2,
+class AutoIntRegModel(tf.keras.Model):
+    def __init__(self, input_layer: InputLayer, output_dim=1, interacting_output_dim=6, n_attention_head=2,
                  interacting_n_layers=1, fc_layers=(128,), activation='relu', use_bn=True, use_drop_out=True,
                  drop_p=0.5, seq_features_concat_way='mean', regularizer=None, **kwargs):
-        super(AutoIntRegModel, self).__init__(None, conti_embd_features, cate_features, cate_seq_features,
-                                              conti_embd_seq_features, seq_features_concat_way, **kwargs)
+        super(AutoIntRegModel, self).__init__(**kwargs)
+
+        self.input_layer = input_layer
 
         self.output_dim = output_dim
         self.interacting_output_dim = interacting_output_dim
@@ -57,17 +57,17 @@ class AutoIntRegModel(InputLayer):
         self.regularizer = regularizer
         self.features = {}
         self.n_features = 0
-        if self.conti_embd_features:
-            self.features.update(self.conti_embd_features)
-            self.n_features += len(self.conti_embd_features)
-        if self.cate_features:
-            self.features.update(self.cate_features)
-            self.n_features += len(self.cate_features)
-        if self.cate_seq_features:
-            self.features.update(self.cate_seq_features)
-        if self.conti_embd_seq_features:
-            self.features.update(self.conti_embd_seq_features)
-        if self.cate_seq_features or self.conti_embd_seq_features:
+        if self.input_layer.conti_embd_features:
+            self.features.update(self.input_layer.conti_embd_features)
+            self.n_features += len(self.input_layer.conti_embd_features)
+        if self.input_layer.cate_features:
+            self.features.update(self.input_layer.cate_features)
+            self.n_features += len(self.input_layer.cate_features)
+        if self.input_layer.cate_seq_features:
+            self.features.update(self.input_layer.cate_seq_features)
+        if self.input_layer.conti_embd_seq_features:
+            self.features.update(self.input_layer.conti_embd_seq_features)
+        if self.input_layer.cate_seq_features or self.input_layer.conti_embd_seq_features:
             self.n_features += 1
 
         self.InteractingLayer = InteractingLayer(self.interacting_output_dim, self.n_attention_head,
@@ -86,7 +86,7 @@ class AutoIntRegModel(InputLayer):
         self.output_layer = tf.keras.layers.Dense(units=self.output_dim)
 
     def call(self, inputs: dict):
-        embd_vecs = super(AutoIntRegModel, self).call(inputs)
+        embd_vecs = self.input_layer(inputs, self.seq_features_concat_way)
         result = embd_vecs if self.seq_features_concat_way == 'stack' else tf.reshape(embd_vecs, (
             tf.shape(embd_vecs)[0], self.n_features, self.embd_dim))
         result = self.InteractingLayer(result)
@@ -96,12 +96,10 @@ class AutoIntRegModel(InputLayer):
 
 
 class AutoIntClfModel(AutoIntRegModel):
-    def __init__(self, conti_embd_features: dict, cate_features: dict, cate_seq_features: dict,
-                 conti_embd_seq_features: dict, output_dim=1, interacting_output_dim=6, n_attention_head=2,
+    def __init__(self, input_layer: InputLayer, output_dim=1, interacting_output_dim=6, n_attention_head=2,
                  interacting_n_layers=1, fc_layers=(128,), activation='relu', use_bn=True, use_drop_out=True,
                  drop_p=0.5, seq_features_concat_way='mean', regularizer=None, **kwargs):
-        super(AutoIntClfModel, self).__init__(conti_embd_features, cate_features, cate_seq_features,
-                                              conti_embd_seq_features, output_dim, interacting_output_dim,
+        super(AutoIntClfModel, self).__init__(input_layer, output_dim, interacting_output_dim,
                                               n_attention_head,
                                               interacting_n_layers, fc_layers, activation, use_bn, use_drop_out,
                                               drop_p, seq_features_concat_way, regularizer, **kwargs)

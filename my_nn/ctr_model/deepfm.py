@@ -3,17 +3,16 @@ from tensorflow import keras
 
 from .fm import FMRegModel
 from .dnn import DnnRegModel
+from ..input_laysers import InputLayer
 
 
 class DeepFmRegModel(keras.Model):
-    def __init__(self, conti_features: dict, conti_embd_features: dict, cate_features: dict, cate_seq_features: dict,
-                 conti_embd_seq_features: dict, seq_features_concat_way='mean', fc_layers=(128,), activation='relu',
+    def __init__(self, input_layer: InputLayer, seq_features_concat_way='mean', fc_layers=(128,), activation='relu',
                  use_bn=True, use_drop_out=True, drop_p=0.5, regularizer=None, **kwargs):
         super(DeepFmRegModel, self).__init__(**kwargs)
-        self.fm = FMRegModel(conti_features, conti_embd_features, cate_features, cate_seq_features,
-                             conti_embd_seq_features, regularizer)
-        self.dnn = DnnRegModel(conti_features, conti_embd_features, cate_features, cate_seq_features,
-                               conti_embd_seq_features, seq_features_concat_way, fc_layers, activation,
+        self.input_layer = input_layer
+        self.fm = FMRegModel(self.input_layer, regularizer)
+        self.dnn = DnnRegModel(self.input_layer, seq_features_concat_way, fc_layers, activation,
                                use_bn, use_drop_out, drop_p, regularizer)
 
     def call(self, inputs: dict):
@@ -21,11 +20,9 @@ class DeepFmRegModel(keras.Model):
 
 
 class DeepFmClfModel(DeepFmRegModel):
-    def __init__(self, conti_features: dict, conti_embd_features: dict, cate_features: dict, cate_seq_features: dict,
-                 conti_embd_seq_features: dict, seq_features_concat_way='mean', fc_layers=(128,), activation='relu',
+    def __init__(self, input_layer: InputLayer, seq_features_concat_way='mean', fc_layers=(128,), activation='relu',
                  use_bn=True, use_drop_out=True, drop_p=0.5, regularizer=None, **kwargs):
-        super(DeepFmClfModel, self).__init__(conti_features, conti_embd_features, cate_features, cate_seq_features,
-                                             conti_embd_seq_features, seq_features_concat_way, fc_layers, activation,
+        super(DeepFmClfModel, self).__init__(input_layer, seq_features_concat_way, fc_layers, activation,
                                              use_bn, use_drop_out, drop_p, regularizer, **kwargs)
 
     def call(self, inputs: dict):

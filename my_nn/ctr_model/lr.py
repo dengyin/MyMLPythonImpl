@@ -1,7 +1,7 @@
-from copy import copy
-
 import tensorflow as tf
 from tensorflow import keras
+
+from my_nn.ctr_model.com import remove_key
 
 
 class LRRegModel(tf.keras.Model):
@@ -61,8 +61,3 @@ class LRClfModel(LRRegModel):
     def call(self, inputs: dict):
         return self.output_func(super(LRClfModel, self).call(inputs))
 
-
-def remove_key(d: dict, key):
-    r = copy(d)
-    del r[key]
-    return r

@@ -6,14 +6,14 @@ from .lr import LRRegModel
 from my_nn.input_laysers import InputLayer
 
 
-class BiInteraction(InputLayer):
+class BiInteraction(tf.keras.Model):
 
-    def __init__(self, conti_embd_features: dict, cate_features: dict, cate_seq_features: dict,
-                 conti_embd_seq_features: dict, fc_layers=(128,),
+    def __init__(self, input_layer: InputLayer, fc_layers=(128,),
                  activation='relu', use_bn=True, use_drop_out=True,
                  drop_p=0.5, output_dim=1, regularizer=None, **kwargs):
-        super(BiInteraction, self).__init__(None, conti_embd_features, cate_features, cate_seq_features,
-                                            conti_embd_seq_features, 'stack', **kwargs)
+        super(BiInteraction, self).__init__(**kwargs)
+
+        self.input_layer = input_layer
         self.regularizer = regularizer
 
         self.output_dim = output_dim
@@ -24,7 +24,7 @@ class BiInteraction(InputLayer):
         self.output_layer = tf.keras.layers.Dense(units=self.output_dim)
 
     def call(self, inputs: dict, **kwargs):
-        embd_vecs = super(BiInteraction, self).call(inputs)  # batch_size * n * embd_size
+        embd_vecs = self.input_layer(inputs, 'stack')  # batch_size * n * embd_size
         embd_vecs_sum_square = tf.reduce_sum(embd_vecs, axis=1) ** 2
         embd_vecs_square_sum = tf.reduce_sum(embd_vecs ** 2, axis=1)
         outputs = 0.5 * (embd_vecs_sum_square - embd_vecs_square_sum)
@@ -35,29 +35,23 @@ class BiInteraction(InputLayer):
 
 
 class NFMRegModel(tf.keras.Model):
-    def __init__(self, conti_features: dict, conti_embd_features: dict, cate_features: dict, cate_seq_features: dict,
-                 conti_embd_seq_features: dict, fc_layers=(128,), activation='relu', use_bn=True, use_drop_out=True,
+    def __init__(self, input_layer: InputLayer, fc_layers=(128,), activation='relu', use_bn=True, use_drop_out=True,
                  drop_p=0.5, output_dim=1, regularizer=None, **kwargs):
         super(NFMRegModel, self).__init__(**kwargs)
 
+        self.input_layer = input_layer
         self.output_dim = output_dim
-        self.conti_features = conti_features
-        self.conti_embd_features = conti_embd_features
-        self.cate_features = cate_features
-        self.cate_seq_features = cate_seq_features
-        self.conti_embd_seq_features = conti_embd_seq_features
         self.regularizer = regularizer
 
-        self.bi_interaction = BiInteraction(self.conti_embd_features, self.cate_features, self.cate_seq_features,
-                                            self.conti_embd_seq_features, fc_layers, activation, use_bn, use_drop_out,
+        self.bi_interaction = BiInteraction(self.input_layer, fc_layers, activation, use_bn, use_drop_out,
                                             drop_p, output_dim, regularizer=regularizer)
 
         conti_features_ = {}
-        if self.conti_features:
-            conti_features_.update(self.conti_features)
-        if self.conti_embd_features:
-            conti_features_.update(self.conti_embd_features)
-        self.lr = LRRegModel(conti_features_, self.cate_features, output_dim, regularizer=self.regularizer)
+        if self.input_layer.conti_features:
+            conti_features_.update(self.input_layer.conti_features)
+        if self.input_layer.conti_embd_features:
+            conti_features_.update(self.input_layer.conti_embd_features)
+        self.lr = LRRegModel(conti_features_, self.input_layer.cate_features, output_dim, regularizer=self.regularizer)
 
     def call(self, inputs: dict):
         first_order = self.lr(inputs)
@@ -66,14 +60,11 @@ class NFMRegModel(tf.keras.Model):
 
 
 class NFMClfModel(NFMRegModel):
-    def __init__(self, conti_features: dict, conti_embd_features: dict, cate_features: dict, cate_seq_features: dict,
-                 conti_embd_seq_features: dict, fc_layers=(128,), activation='relu', use_bn=True, use_drop_out=True,
+    def __init__(self, input_layer: InputLayer, fc_layers=(128,), activation='relu', use_bn=True, use_drop_out=True,
                  drop_p=0.5, output_dim=1, regularizer=None, **kwargs):
-        super(NFMClfModel, self).__init__(conti_features, conti_embd_features, cate_features, cate_seq_features,
-                                          conti_embd_seq_features, fc_layers, activation, use_bn, use_drop_out,
+        super(NFMClfModel, self).__init__(input_layer, fc_layers, activation, use_bn, use_drop_out,
                                           drop_p, output_dim, regularizer, **kwargs)
         self.output_func = tf.nn.softmax if self.output_dim >= 2 else tf.nn.sigmoid
 
     def call(self, inputs: dict):
         return self.output_func(super(NFMClfModel, self).call(inputs))
-
