@@ -23,7 +23,6 @@ class LRRegModel(tf.keras.Model):
                         ))
 
         if self.conti_features:
-            self.bn1 = keras.layers.BatchNormalization()
             self.dense1 = tf.keras.layers.Dense(units=self.output_dim, name='conti_features',
                                                 kernel_regularizer=self.regularizer, bias_regularizer=self.regularizer)
         self.fl = tf.keras.layers.Flatten()
@@ -41,12 +40,11 @@ class LRRegModel(tf.keras.Model):
         if self.conti_features:
             result += self.fl(
                 self.dense1(
-                    self.bn1(
-                        tf.concat(
-                            [inputs[name] for name in self.conti_features.keys()],
-                            axis=-1
-                        )  # batch_size * n
-                    )
+                    tf.concat(
+                        [inputs[name] for name in self.conti_features.keys()],
+                        axis=-1
+                    )  # batch_size * n
+
                 )
             )  # batch_size * k
 
@@ -60,4 +58,3 @@ class LRClfModel(LRRegModel):
 
     def call(self, inputs: dict):
         return self.output_func(super(LRClfModel, self).call(inputs))
-
